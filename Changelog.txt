@@ -1,0 +1,3 @@
+Created file structure - Andrew 9/9 10:40
+
+Began Database Implementation - Andrew 9/10 4:10p
