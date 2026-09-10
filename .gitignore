@@ -1,4 +1,2 @@
 #this file will omit all the files that are not needed to be tracked by git
-README.md
-Changelog.txt
-chatroom.txt
+.vscode
