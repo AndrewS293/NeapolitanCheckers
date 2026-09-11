@@ -1,6 +1,6 @@
 package com.checkers.service;
 
-import com.checkers.dto.RegisterRequest;
+import com.checkers.datatrans.RegisterRequest;
 import com.checkers.model.User;
 import com.checkers.repository.UserRepository;
 import org.springframework.security.crypto.password.PasswordEncoder;

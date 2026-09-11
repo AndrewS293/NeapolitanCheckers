@@ -1,4 +1,4 @@
-package com.checkers.dto;
+package com.checkers.datatrans;
 
 public class RegisterRequest {
 
