@@ -50,6 +50,7 @@
 		<dependency>
 			<groupId>org.postgresql</groupId>
 			<artifactId>postgresql</artifactId>
+			<version>42.7.2</version>
 			<scope>runtime</scope>
 		</dependency>
 		<dependency>
@@ -72,6 +73,17 @@
 			<artifactId>spring-boot-starter-websocket-test</artifactId>
 			<scope>test</scope>
 		</dependency>
+		<dependency>
+			<groupId>org.openjfx</groupId>
+			<artifactId>javafx-controls</artifactId>
+			<version>21</version> <!-- Use your preferred version -->
+		</dependency>
+		<dependency>
+			<groupId>org.openjfx</groupId>
+			<artifactId>javafx-fxml</artifactId>
+			<version>21</version>
+		</dependency>
+
 	</dependencies>
 
 	<build>
@@ -80,6 +92,18 @@
 				<groupId>org.springframework.boot</groupId>
 				<artifactId>spring-boot-maven-plugin</artifactId>
 			</plugin>
+			
+    
+			<plugin>
+				<groupId>org.openjfx</groupId>
+				<artifactId>javafx-maven-plugin</artifactId>
+				<version>0.0.8</version>
+				<configuration>
+					<mainClass>com.checkers.GameApp</mainClass>
+				</configuration>
+			</plugin>
+    
+
 		</plugins>
 	</build>
 

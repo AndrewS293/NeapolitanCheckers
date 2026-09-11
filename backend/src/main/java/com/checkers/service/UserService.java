@@ -1,6 +1,6 @@
 package com.checkers.service;
 
-import com.checkers.dto.RegisterRequest;
+import com.checkers.datatrans.RegisterRequest;
 import com.checkers.model.User;
 import com.checkers.repository.UserRepository;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -20,7 +20,18 @@ public class UserService {
         this.passwordEncoder = passwordEncoder;
     }
 
-    //Hamzeh's section
+    public User register(RegisterRequest request) {
+        //hamzeh section
 
-   
+        User user = new User();
+
+        user.setUsername(request.getUsername());
+        user.setEmail(request.getEmail());
+
+        user.setPasswordHash(
+                passwordEncoder.encode(request.getPassword())
+        );
+
+        return userRepository.save(user);
+    }
 }
