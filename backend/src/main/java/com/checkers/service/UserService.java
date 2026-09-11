@@ -20,7 +20,18 @@ public class UserService {
         this.passwordEncoder = passwordEncoder;
     }
 
-    //Hamzeh's section
+    public User register(RegisterRequest request) {
+        //hamzeh section
 
-   
+        User user = new User();
+
+        user.setUsername(request.getUsername());
+        user.setEmail(request.getEmail());
+
+        user.setPasswordHash(
+                passwordEncoder.encode(request.getPassword())
+        );
+
+        return userRepository.save(user);
+    }
 }

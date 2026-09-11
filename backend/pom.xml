@@ -50,6 +50,7 @@
 		<dependency>
 			<groupId>org.postgresql</groupId>
 			<artifactId>postgresql</artifactId>
+			<version>42.7.2</version>
 			<scope>runtime</scope>
 		</dependency>
 		<dependency>
@@ -98,8 +99,7 @@
 				<artifactId>javafx-maven-plugin</artifactId>
 				<version>0.0.8</version>
 				<configuration>
-					<!-- Replace this with your actual main class path -->
-					<mainClass>com.example.GameApp</mainClass>
+					<mainClass>com.checkers.GameApp</mainClass>
 				</configuration>
 			</plugin>
     
