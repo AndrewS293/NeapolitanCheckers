@@ -34,4 +34,24 @@ public class UserService {
 
         return userRepository.save(user);
     }
+
+    public User login(String username, String password) {
+
+        User user = userRepository.findByUsername(username)
+                .orElseThrow(() ->
+                        new IllegalArgumentException("Invalid username or password"));
+
+        if (!passwordEncoder.matches(password, user.getPasswordHash())) {
+            throw new IllegalArgumentException("Invalid username or password");
+        }
+
+        return user;
+    }
+
+    public User findById(Long id) {
+
+        return userRepository.findById(id)
+                .orElseThrow(() ->
+                        new IllegalArgumentException("User not found"));
+    }
 }
