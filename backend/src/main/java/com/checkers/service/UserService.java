@@ -22,6 +22,9 @@ public class UserService {
 
     public User register(RegisterRequest request) {
         //hamzeh section
+        if (userRepository.existsByUsername(request.getUsername())) {
+            throw new IllegalArgumentException("Username already exists");
+        }
 
         User user = new User();
 
