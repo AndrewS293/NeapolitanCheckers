@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Checkers WebSocket Test</title>
+</head>
+<body>
+
+<h1>Checkers WebSocket Test</h1>
+
+<p id="status">Connecting...</p>
+
+<input id="messageInput" type="text" placeholder="Enter message">
+<button onclick="sendMessage()">Send</button>
+
+<div id="messages"></div>
+
+<script>
+
+    const status = document.getElementById("status");
+    const messages = document.getElementById("messages");
+
+    const socket = new WebSocket("ws://localhost:8080/online");
+
+    socket.onopen = function () {
+        status.textContent = "Connected!";
+        addMessage("Connected to server.");
+    };
+
+    socket.onmessage = function (event) {
+        addMessage("Server: " + event.data);
+    };
+
+    socket.onclose = function () {
+        status.textContent = "Disconnected.";
+        addMessage("Disconnected from server.");
+    };
+
+    socket.onerror = function (error) {
+        status.textContent = "WebSocket error.";
+        console.error(error);
+    };
+
+    function sendMessage() {
+
+        const input = document.getElementById("messageInput");
+
+        if (socket.readyState === WebSocket.OPEN) {
+            socket.send(input.value);
+            addMessage("You: " + input.value);
+            input.value = "";
+        }
+    }
+
+    function addMessage(message) {
+
+        const element = document.createElement("p");
+        element.textContent = message;
+
+        messages.appendChild(element);
+    }
+
+</script>
+
+</body>
+</html>
