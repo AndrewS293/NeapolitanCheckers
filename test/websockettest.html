@@ -19,7 +19,8 @@
     const status = document.getElementById("status");
     const messages = document.getElementById("messages");
 
-    const socket = new WebSocket("ws://localhost:8080/online");
+    const gameId = "D80DAA"
+    const socket = new WebSocket("ws://localhost:8080/online?gameId=" + gameId);
 
     socket.onopen = function () {
         status.textContent = "Connected!";

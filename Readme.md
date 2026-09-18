@@ -6,3 +6,15 @@ When starting to work on code - pull repo
 Before pushing/committing any changes - pull repo again
 
 please add brief overview of changes made in changelog <3
+
+
+
+
+CMD list:
+.\mvnw.cmd clean spring-boot:run  -- from backend folder
+
+Invoke-RestMethod `
+>>     -Method Post `
+>>     -Uri "http://localhost:8080/api/games"   
+
+.\backend\mvnw.cmd -f ".\test\pom.xml" clean javafx:run 
