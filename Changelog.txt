@@ -1,3 +1,5 @@
 Created file structure - Andrew 9/9 10:40p
 Began Database Implementation - Andrew 9/10 4:10p
 Complete user login system and gui test - Andrew 9/15 3:47p
+Websocket setup/test - Andrew 9/17 11:50a 
+Websocket pt2 - Andrew 9/18  3:23p

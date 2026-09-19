@@ -20,15 +20,18 @@ public class SecurityConfig {
             HttpSecurity http) throws Exception {
 
         http
-            // We are using our own login system and JavaFX client,
-            // so CSRF is not needed for these API requests.
             .csrf(csrf -> csrf.disable())
 
             .authorizeHttpRequests(auth -> auth
                 .requestMatchers("/api/auth/**").permitAll()
-                .anyRequest().authenticated()
+                //.anyRequest().authenticated()
+
+                .requestMatchers("/online/**").permitAll()
+                .anyRequest().permitAll()
+            
             );
 
         return http.build();
     }
+
 }
