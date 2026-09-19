@@ -1,5 +1,6 @@
 package com.checkers;
 
+import com.checkers.controller.GameBoardController;
 import com.checkers.api.AuthApi;
 import com.checkers.controller.LoginController;
 import com.checkers.controller.MainMenuController;
@@ -27,7 +28,18 @@ public class Main extends Application {
 
         stage.show();
     }
+    public static void showGameBoard() {
 
+    GameBoardController controller =
+            new GameBoardController();
+
+    Scene scene = controller.createScene();
+
+    stage.setScene(scene);
+
+    stage.setWidth(650);
+    stage.setHeight(720);
+    }
     public static AuthApi getAuthApi() {
         return authApi;
     }
