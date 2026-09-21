@@ -21,10 +21,38 @@ public class UserService {
     }
 
     public User register(RegisterRequest request) {
-        //hamzeh section
+       
+        if (request.getUsername().isBlank()) {
+        throw new IllegalArgumentException("Username is required");
+        }
+
         if (userRepository.existsByUsername(request.getUsername())) {
             throw new IllegalArgumentException("Username already exists");
         }
+
+        if (request.getEmail().isBlank()) {
+
+        throw new IllegalArgumentException("Email is required");
+
+        }
+
+        if (!request.getEmail().contains("@")) {
+        
+        throw new IllegalArgumentException("Invalid email address");
+        }   
+
+        if (request.getPassword().isBlank()) {
+        throw new IllegalArgumentException("Password is required");
+       
+
+        }
+
+        if (request.getPassword().length() < 8) {
+
+        throw new IllegalArgumentException("Password must be at least 8 characters");
+
+        }
+
 
         User user = new User();
 
