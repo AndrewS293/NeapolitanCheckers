@@ -1,0 +1,8 @@
+com\checkers\Main.class
+com\checkers\controller\MainMenuController.class
+com\checkers\controller\RegisterController.class
+com\checkers\session\SessionManager.class
+com\checkers\api\AuthApi.class
+com\checkers\model\User.class
+com\checkers\controller\GameBoardController.class
+com\checkers\controller\LoginController.class

@@ -2,3 +2,4 @@ Created file structure - Andrew 9/9 10:40p
 Began Database Implementation - Andrew 9/10 4:10p
 Complete user login system and gui test - Andrew 9/15 3:47p
 Completed GUI Game Board
+Completed logic with board, piece, move & logic - Alyssa 9/21 7:41
