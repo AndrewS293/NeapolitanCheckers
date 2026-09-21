@@ -3,3 +3,4 @@
 .github
 test/target/
 README.md
+.DS_Store
