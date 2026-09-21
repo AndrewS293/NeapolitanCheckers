@@ -41,8 +41,11 @@ public class MainMenuController {
                 );
 
         Button playButton =
-                new Button("Play Checkers");
-
+                new Button("Play Checkers"); 
+        playButton.setOnAction(event -> {
+                Main.showGameBoard();
+        });
+                
         Button logoutButton =
                 new Button("Logout");
 
