@@ -5,7 +5,7 @@ import org.springframework.web.socket.TextMessage;
 import org.springframework.web.socket.WebSocketSession;
 
 import java.io.IOException;
-import java.util.Map;
+import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 
 @Component
@@ -40,12 +40,12 @@ public class GameSessionManager {
     }
 
 
-    public GameRoom createRoom(String gameId) {
-        GameRoom room = new GameRoom(gameId);
+    public GameRoom createRoom(String gameId, GameVisibility visibility, String joinCode) {
+        GameRoom room = new GameRoom(gameId, visibility, joinCode);
         rooms.put(gameId, room);
 
         System.out.println(
-                "Game room created: " + gameId
+                "Created " + visibility.name().toLowerCase() + " game room: " + gameId
         );
 
         return room;
@@ -56,7 +56,28 @@ public class GameSessionManager {
     }
 
 
-    public boolean joinRoom(String gameId, WebSocketSession session) {
+    public GameRoom getRoomByJoinCode(String joinCode) {
+        for (GameRoom room : rooms.values()) {
+            if (room.getJoinCode().equals(joinCode)) {
+                return room;
+            }
+        }
+        return null;
+    }
+
+    public List<GameRoom> getOpenPublicGames() {
+        List<GameRoom> openPublicGames = new ArrayList<>();
+
+        for (GameRoom room : rooms.values()) {
+            if (room.getVisibility() == GameVisibility.PUBLIC && room.getStatus() == GameRoom.Status.WAITING && !room.isFull()) {
+                openPublicGames.add(room);
+            }
+        }
+
+        return openPublicGames;
+    }
+
+    public boolean joinRoom(String gameId, WebSocketSession session, String username) {
         GameRoom room = rooms.get(gameId);
         
         if (room == null)  {
@@ -67,7 +88,7 @@ public class GameSessionManager {
             return false;
         }
 
-        boolean added = room.addPlayer(session);
+        boolean added = room.addPlayer(session, username);
 
         if (added) {
             System.out.println(

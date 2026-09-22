@@ -12,17 +12,38 @@ public class GameRoom {
 
     private final String gameId;
 
+    private final GameVisibility visibility;
+
+    private final String joinCode;
+
     private WebSocketSession player1;
     private WebSocketSession player2;
 
+    private String player1Username;
+    private String player2Username;
+
     private Status status = Status.WAITING;
 
-    public GameRoom(String gameId) {
+    public GameRoom(
+            String gameId,
+            GameVisibility visibility,
+            String joinCode) {
+
         this.gameId = gameId;
+        this.visibility = visibility;
+        this.joinCode = joinCode;
     }
 
     public String getGameId() {
         return gameId;
+    }
+
+    public GameVisibility getVisibility() {
+        return visibility;
+    }
+
+    public String getJoinCode() {
+        return joinCode;
     }
 
     public WebSocketSession getPlayer1() {
@@ -37,7 +58,7 @@ public class GameRoom {
         return status;
     }
 
-    public boolean addPlayer(WebSocketSession session) {
+    public boolean addPlayer(WebSocketSession session, String username) {
 
         if (status == Status.FINISHED) {
             return false;
@@ -45,12 +66,14 @@ public class GameRoom {
 
         if (player1 == null) {
             player1 = session;
+            player1Username = username;
             updateStatus();
             return true;
         }
 
         if (player2 == null) {
             player2 = session;
+            player2Username = username;
             updateStatus();
             return true;
         }
@@ -63,11 +86,13 @@ public class GameRoom {
         if (player1 != null &&
                 player1.getId().equals(session.getId())) {
             player1 = null;
+            player1Username = null;
         }
 
         if (player2 != null &&
                 player2.getId().equals(session.getId())) {
             player2 = null;
+            player2Username = null;
         }
 
         updateStatus();
@@ -83,11 +108,15 @@ public class GameRoom {
     }
 
     public boolean isFull() {
-        return player1 != null && player2 != null;
+
+        return player1 != null &&
+                player2 != null;
     }
 
     public boolean isEmpty() {
-        return player1 == null && player2 == null;
+
+        return player1 == null &&
+                player2 == null;
     }
 
     public int getPlayerCount() {
@@ -103,5 +132,13 @@ public class GameRoom {
         }
 
         return count;
+    }
+
+    public String getPlayer1Username() {
+        return player1Username;
+    }
+
+    public String getPlayer2Username() {
+        return player2Username;
     }
 }
