@@ -16,7 +16,7 @@ import java.util.Map;
 public class AuthApi {
 
     private static final String BASE_URL =
-            "http://localhost:8080/api/auth";
+            "https://neapolitancheckers.onrender.com/api/auth";
 
     private final HttpClient client;
     private final ObjectMapper mapper;
