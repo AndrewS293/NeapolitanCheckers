@@ -46,6 +46,7 @@ public class GameWebSocketHandler extends TextWebSocketHandler {
             String gameId,
             String type,
             Integer player,
+            String username,
             String message) {
 
         GameRoom room = sessionManager.getRoom(gameId);
@@ -61,6 +62,7 @@ public class GameWebSocketHandler extends TextWebSocketHandler {
                         player,
                         room.getPlayerCount(),
                         room.getStatus().name(),
+                        username,
                         message
                 );
 
@@ -88,11 +90,33 @@ public class GameWebSocketHandler extends TextWebSocketHandler {
 
         String gameId = getGameId(session);
 
+        String username = (String) session.getAttributes().get("username");
+
+        if (username == null) {
+
+            sendMessage(
+                    session,
+                    new WebSocketMessage(
+                            "ERROR",
+                            null,
+                            null,
+                            null,
+                            null,
+                            null,
+                            "You must be logged in to join a game."
+                    )
+            );
+
+            session.close();
+            return;
+        }
+
         if (gameId == null) {
             sendMessage(
                     session,
                     new WebSocketMessage(
                             "ERROR",
+                            null,
                             null,
                             null,
                             null,
@@ -115,6 +139,7 @@ public class GameWebSocketHandler extends TextWebSocketHandler {
                             null,
                             null,
                             null,
+                            null,
                             "Game not found: " + gameId
                     )
             );
@@ -122,7 +147,7 @@ public class GameWebSocketHandler extends TextWebSocketHandler {
             return;
         }
 
-        boolean joined = sessionManager.joinRoom(gameId, session);
+        boolean joined = sessionManager.joinRoom(gameId, session, username);
 
         if (!joined) {
             sendMessage(
@@ -130,6 +155,7 @@ public class GameWebSocketHandler extends TextWebSocketHandler {
                     new WebSocketMessage(
                             "ERROR",
                             gameId,
+                            null,
                             null,
                             null,
                             null,
@@ -150,6 +176,7 @@ public class GameWebSocketHandler extends TextWebSocketHandler {
                     playerNumber,
                     room.getPlayerCount(),
                     room.getStatus().name(),
+                    username,
                     "Connected to game."
             )
         );
@@ -158,13 +185,15 @@ public class GameWebSocketHandler extends TextWebSocketHandler {
                 gameId,
                 "PLAYER_JOINED",
                 playerNumber,
-                "Player " + playerNumber + " joined the game."
+                username,
+                username + " joined the game."
         );
 
         if (room.getStatus() == GameRoom.Status.ACTIVE) {
             broadcast(
                     gameId,
                     "GAME_STARTED",
+                    null,
                     null,
                     "Game is now active. Both players are connected."
             );
@@ -200,6 +229,7 @@ public class GameWebSocketHandler extends TextWebSocketHandler {
                 gameId,
                 "GAME_MESSAGE",
                 getPlayerNumber(room, session),
+                null,
                 message.getPayload()
         );
     }
@@ -231,6 +261,11 @@ public void afterConnectionClosed(
             return;
         }
 
+        String username =
+        playerNumber == 1
+                ? room.getPlayer1Username()
+                : room.getPlayer2Username();
+
         sessionManager.removePlayerFromGame(
                 gameId,
                 session
@@ -249,12 +284,14 @@ public void afterConnectionClosed(
                     gameId,
                     "PLAYER_LEFT",
                     playerNumber,
-                    "Player " + playerNumber + " left the game."
+                    username,
+                    username + " left the game."
             );
 
             broadcast(
                     gameId,
                     "GAME_WAITING",
+                    null,
                     null,
                     "Game is waiting for another player."
             );

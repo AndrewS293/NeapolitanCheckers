@@ -19,8 +19,8 @@ public class WebSocketMessage {
             Integer player,
             Integer players,
             String status,
-            String message,
-            String username) {
+            String username,
+            String message) {
 
         this.type = type;
         this.gameId = gameId;
@@ -28,6 +28,7 @@ public class WebSocketMessage {
         this.players = players;
         this.status = status;
         this.message = message;
+        this.username = username;
     }
 
     public String getType() {

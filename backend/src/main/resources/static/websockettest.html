@@ -444,12 +444,11 @@
      *
      */
 
-    const API_URL =
-        "http://localhost:8080";
-
+    const API_URL = "";
     const WS_URL =
-        "ws://localhost:8080/online";
-
+        (window.location.protocol === "https:" ? "wss://" : "ws://")
+        + window.location.host
+        + "/online";
 
     let socket = null;
 
