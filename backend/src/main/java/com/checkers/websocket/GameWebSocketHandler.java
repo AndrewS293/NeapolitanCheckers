@@ -5,14 +5,80 @@ import org.springframework.web.socket.CloseStatus;
 import org.springframework.web.socket.TextMessage;
 import org.springframework.web.socket.WebSocketSession;
 import org.springframework.web.socket.handler.TextWebSocketHandler;
+import com.fasterxml.jackson.databind.ObjectMapper;
 
 @Component
 public class GameWebSocketHandler extends TextWebSocketHandler {
 
     private final GameSessionManager sessionManager;
 
+    private final ObjectMapper objectMapper;
+
     public GameWebSocketHandler(GameSessionManager sessionManager) {
         this.sessionManager = sessionManager;
+        this.objectMapper = new ObjectMapper();
+    }
+
+
+    private void sendMessage(
+            WebSocketSession session,
+            WebSocketMessage message) {
+
+        try {
+            String json = objectMapper.writeValueAsString(message);
+
+            session.sendMessage(
+                    new TextMessage(json)
+            );
+
+        } catch (Exception e) {
+
+            System.err.println(
+                    "Error sending message to client "
+                            + session.getId()
+                            + ": "
+                            + e.getMessage()
+            );
+        }
+    }
+
+    private void broadcast(
+            String gameId,
+            String type,
+            Integer player,
+            String message) {
+
+        GameRoom room = sessionManager.getRoom(gameId);
+
+        if (room == null) {
+            return;
+        }
+
+        WebSocketMessage webSocketMessage =
+                new WebSocketMessage(
+                        type,
+                        gameId,
+                        player,
+                        room.getPlayerCount(),
+                        room.getStatus().name(),
+                        message
+                );
+
+        String json;
+
+        try {
+            json = objectMapper.writeValueAsString(
+                    webSocketMessage
+            );
+        } catch (Exception e) {
+            System.err.println(
+                    "Failed to create WebSocket message: "
+                            + e.getMessage()
+            );
+            return;
+        }
+
+        sessionManager.sendToGame(gameId, json);
     }
 
     @Override
@@ -23,8 +89,16 @@ public class GameWebSocketHandler extends TextWebSocketHandler {
         String gameId = getGameId(session);
 
         if (gameId == null) {
-            session.sendMessage(
-                    new TextMessage("Connected, but no game ID was provided.")
+            sendMessage(
+                    session,
+                    new WebSocketMessage(
+                            "ERROR",
+                            null,
+                            null,
+                            null,
+                            null,
+                            "No game ID was provided."
+                    )
             );
             session.close();
             return;
@@ -33,8 +107,16 @@ public class GameWebSocketHandler extends TextWebSocketHandler {
         GameRoom room = sessionManager.getRoom(gameId);
 
         if (room == null) {
-            session.sendMessage(
-                    new TextMessage("Game not found: " + gameId)
+            sendMessage(
+                    session,
+                    new WebSocketMessage(
+                            "ERROR",
+                            gameId,
+                            null,
+                            null,
+                            null,
+                            "Game not found: " + gameId
+                    )
             );
             session.close();
             return;
@@ -43,8 +125,16 @@ public class GameWebSocketHandler extends TextWebSocketHandler {
         boolean joined = sessionManager.joinRoom(gameId, session);
 
         if (!joined) {
-            session.sendMessage(
-                    new TextMessage("Unable to join game. The game may be full.")
+            sendMessage(
+                    session,
+                    new WebSocketMessage(
+                            "ERROR",
+                            gameId,
+                            null,
+                            null,
+                            null,
+                            "Unable to join game. The game may be full."
+                    )
             );
             session.close();
             return;
@@ -52,22 +142,31 @@ public class GameWebSocketHandler extends TextWebSocketHandler {
 
         int playerNumber = room.getPlayerCount();
 
-        session.sendMessage(
-                new TextMessage(
-                        "Connected to game: " + gameId
-                                + " as Player " + playerNumber
-                )
+        sendMessage(
+            session,
+            new WebSocketMessage(
+                    "CONNECTED",
+                    gameId,
+                    playerNumber,
+                    room.getPlayerCount(),
+                    room.getStatus().name(),
+                    "Connected to game."
+            )
         );
 
-        sessionManager.sendToGame(
+        broadcast(
                 gameId,
+                "PLAYER_JOINED",
+                playerNumber,
                 "Player " + playerNumber + " joined the game."
         );
 
         if (room.getStatus() == GameRoom.Status.ACTIVE) {
-            sessionManager.sendToGame(
+            broadcast(
                     gameId,
-                    "Game is now ACTIVE. Both players are connected."
+                    "GAME_STARTED",
+                    null,
+                    "Game is now active. Both players are connected."
             );
         }
     }
@@ -83,6 +182,12 @@ public class GameWebSocketHandler extends TextWebSocketHandler {
             return;
         }
 
+        GameRoom room = sessionManager.getRoom(gameId);
+
+        if (room == null) {
+            return;
+        }
+
         System.out.println(
                 "Game " + gameId
                         + " | Client "
@@ -91,14 +196,12 @@ public class GameWebSocketHandler extends TextWebSocketHandler {
                         + message.getPayload()
         );
 
-        String response =
-                "Game " + gameId
-                        + " | Client "
-                        + session.getId()
-                        + ": "
-                        + message.getPayload();
-
-        sessionManager.sendToGame(gameId, response);
+        broadcast(
+                gameId,
+                "GAME_MESSAGE",
+                getPlayerNumber(room, session),
+                message.getPayload()
+        );
     }
 
    @Override
@@ -142,14 +245,17 @@ public void afterConnectionClosed(
         if (updatedRoom != null &&
                 !updatedRoom.isEmpty()) {
 
-            sessionManager.sendToGame(
+            broadcast(
                     gameId,
-                    "Player " + playerNumber
-                            + " left the game."
+                    "PLAYER_LEFT",
+                    playerNumber,
+                    "Player " + playerNumber + " left the game."
             );
 
-            sessionManager.sendToGame(
+            broadcast(
                     gameId,
+                    "GAME_WAITING",
+                    null,
                     "Game is waiting for another player."
             );
         }
