@@ -1,6 +1,7 @@
 package com.checkers.api;
 
 import com.checkers.model.User;
+import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
 import java.net.CookieManager;
@@ -46,11 +47,16 @@ public class AuthApi {
         data.put("username", username);
         data.put("password", password);
 
-        String json = mapper.writeValueAsString(data);
+        String json =
+                mapper.writeValueAsString(data);
 
         HttpRequest request =
                 HttpRequest.newBuilder()
-                        .uri(URI.create(BASE_URL + "/login"))
+                        .uri(
+                                URI.create(
+                                        BASE_URL + "/login"
+                                )
+                        )
                         .header(
                                 "Content-Type",
                                 "application/json"
@@ -68,9 +74,12 @@ public class AuthApi {
                 );
 
         if (response.statusCode() != 200) {
+
             throw new Exception(
-                    "Login failed: HTTP "
-                    + response.statusCode()
+                    extractErrorMessage(
+                            response.body(),
+                            "Login failed."
+                    )
             );
         }
 
@@ -79,6 +88,7 @@ public class AuthApi {
                 User.class
         );
     }
+
 
     public User register(
             String username,
@@ -92,7 +102,8 @@ public class AuthApi {
         data.put("email", email);
         data.put("password", password);
 
-        String json = mapper.writeValueAsString(data);
+        String json =
+                mapper.writeValueAsString(data);
 
         HttpRequest request =
                 HttpRequest.newBuilder()
@@ -118,9 +129,12 @@ public class AuthApi {
                 );
 
         if (response.statusCode() != 200) {
+
             throw new Exception(
-                    "Registration failed: HTTP "
-                    + response.statusCode()
+                    extractErrorMessage(
+                            response.body(),
+                            "Registration failed."
+                    )
             );
         }
 
@@ -129,6 +143,7 @@ public class AuthApi {
                 User.class
         );
     }
+
 
     public void logout() throws Exception {
 
@@ -149,4 +164,40 @@ public class AuthApi {
                 HttpResponse.BodyHandlers.ofString()
         );
     }
+
+
+    /*
+     * Extracts the "error" field returned by Spring Boot.
+     *
+     * Expected response:
+     *
+     * {
+     *     "error": "Username already exists."
+     * }
+     */
+    private String extractErrorMessage(
+            String responseBody,
+            String fallbackMessage) {
+
+        try {
+
+            JsonNode node =
+                    mapper.readTree(responseBody);
+
+            JsonNode error =
+                    node.get("error");
+
+            if (error != null &&
+                    !error.asText().isBlank()) {
+
+                return error.asText();
+            }
+
+        } catch (Exception ignored) {
+            // Fall back to the default message.
+        }
+
+        return fallbackMessage;
+    }
 }
+
