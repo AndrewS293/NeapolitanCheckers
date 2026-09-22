@@ -1,4 +1,3 @@
 hi everyone, i put some directions in the readme, lmk if you need help - andrew
 
-alyssa and nae - you can put your work in src\main\java\com\checkers logic and ui - we'll combine it all later
-lmk if you have issues running the code - you may need to use the MainCheckers.java to run or maven
+thank you king of wasia

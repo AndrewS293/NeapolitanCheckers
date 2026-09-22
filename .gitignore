@@ -1,5 +1,9 @@
 #this file will omit all the files that are not needed to be tracked by git
 .vscode
 .github
+<<<<<<< HEAD
 test/target/
 README.md
+=======
+Readme.md
+>>>>>>> 85aaf38530040c9b7d173e145116e6bbe3081db8

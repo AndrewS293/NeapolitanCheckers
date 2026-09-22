@@ -1,5 +1,6 @@
 package com.checkers.controller;
 
+import com.checkers.database.MoveDAO;
 import com.checkers.websocket.GameRoom;
 import com.checkers.websocket.GameSessionManager;
 import com.checkers.websocket.GameVisibility;
@@ -154,4 +155,17 @@ public class GameController {
                 )
         );
     }
+    @GetMapping("/test-move")
+public String testMove() {
+
+    MoveDAO.saveMove(
+        1,
+        13,
+        4,
+        "f6",
+        "g5"
+    );
+
+    return "Move sent to Supabase!";
+ }
 }
