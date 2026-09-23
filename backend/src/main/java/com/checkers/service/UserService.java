@@ -26,6 +26,10 @@ public class UserService {
         throw new IllegalArgumentException("Username is required");
         }
 
+        //check username length
+        //no special characters in username
+
+
         if (userRepository.existsByUsername(request.getUsername())) {
             throw new IllegalArgumentException("Username already exists");
         }
@@ -46,6 +50,8 @@ public class UserService {
        
 
         }
+
+        //other password requirements 
 
         if (request.getPassword().length() < 8) {
 

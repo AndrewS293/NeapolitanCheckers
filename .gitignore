@@ -1,4 +1,14 @@
 #this file will omit all the files that are not needed to be tracked by git
 .vscode
 .github
-Readme.md
+test/
+README.md
+target/
+.git/
+.idea/
+.vscode/
+*.iml
+*.class
+*.log
+.env
+application-local.properties

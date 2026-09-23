@@ -1,0 +1,9 @@
+Added this file bc README was being annoying
+
+
+
+https://neapolitancheckers.onrender.com/
+
+.\mvnw.cmd clean spring-boot:run
+
+.\backend\mvnw.cmd -f ".\test\pom.xml" clean javafx:run 
