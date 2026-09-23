@@ -68,7 +68,7 @@ public class Board {
 
     // get the row from a playable square index
     public static int getRow(int index) {
-        if (!isValidIndexStatic(index)) {
+        if (index >= 0 && index < playable_squares) {
             return -1;
         }
         return index / (board_size / 2);
@@ -76,7 +76,7 @@ public class Board {
 
     // get the column from a playable square index
     public static int getCol(int index) {
-        if (!isValidIndexStatic(index)) {
+        if (index < 0 || index >= playable_squares) {
             return -1;
         }
         int row = getRow(index);

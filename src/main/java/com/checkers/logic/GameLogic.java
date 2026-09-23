@@ -57,11 +57,13 @@ public class GameLogic {
             return false; // destination square is not empty
         }
 
-        if (!isValidMove(new Move(start, end), piece)) {
+        Move move = new Move(start, end);
+
+        if (isValidMove(move.getStart(), move.getEnd()) == false) {
             return false; // move is not valid
         }
 
-        Move move = new Move(start, end);
+       
         
         // move the piece
         board.setPiece(end, piece);

@@ -3,7 +3,16 @@ Added this file bc README was being annoying
 
 
 https://neapolitancheckers.onrender.com/
+https://neapolitancheckers.onrender.com/websockettest.html
 
+
+#don't need to run these anymore as it is on render now but still here if needed
+Windows:
 .\mvnw.cmd clean spring-boot:run
+Mac:
+./mvnw clean spring-boot:run
 
+Windows:
 .\backend\mvnw.cmd -f ".\test\pom.xml" clean javafx:run 
+Mac:
+./backend/mvnw -f "./test/pom.xml" clean javafx:run 
