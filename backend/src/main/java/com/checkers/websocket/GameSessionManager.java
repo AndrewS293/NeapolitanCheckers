@@ -11,11 +11,14 @@ import java.util.concurrent.ConcurrentHashMap;
 @Component
 public class GameSessionManager {
 
-    private final Map<String, WebSocketSession> sessions = new ConcurrentHashMap<>();
+    private final Map<String, WebSocketSession> sessions =
+            new ConcurrentHashMap<>();
 
-    private final Map<String, GameRoom> rooms = new ConcurrentHashMap<>();
+    private final Map<String, GameRoom> rooms =
+            new ConcurrentHashMap<>();
 
     public void addSession(WebSocketSession session) {
+
         sessions.put(session.getId(), session);
 
         System.out.println(
@@ -28,6 +31,7 @@ public class GameSessionManager {
     }
 
     public void removeSession(WebSocketSession session) {
+
         sessions.remove(session.getId());
 
         System.out.println(
@@ -39,13 +43,28 @@ public class GameSessionManager {
         );
     }
 
+    public GameRoom createRoom(
+            String gameId,
+            long databaseGameId,
+            GameVisibility visibility,
+            String joinCode) {
 
-    public GameRoom createRoom(String gameId, GameVisibility visibility, String joinCode) {
-        GameRoom room = new GameRoom(gameId, visibility, joinCode);
+        GameRoom room = new GameRoom(
+                gameId,
+                databaseGameId,
+                visibility,
+                joinCode
+        );
+
         rooms.put(gameId, room);
 
         System.out.println(
-                "Created " + visibility.name().toLowerCase() + " game room: " + gameId
+                "Created "
+                        + visibility.name().toLowerCase()
+                        + " game room: "
+                        + gameId
+                        + " | Database ID: "
+                        + databaseGameId
         );
 
         return room;
@@ -55,21 +74,31 @@ public class GameSessionManager {
         return rooms.get(gameId);
     }
 
-
     public GameRoom getRoomByJoinCode(String joinCode) {
+
         for (GameRoom room : rooms.values()) {
-            if (room.getJoinCode().equals(joinCode)) {
+
+            if (joinCode != null &&
+                    joinCode.equals(room.getJoinCode())) {
+
                 return room;
             }
         }
+
         return null;
     }
 
     public List<GameRoom> getOpenPublicGames() {
-        List<GameRoom> openPublicGames = new ArrayList<>();
+
+        List<GameRoom> openPublicGames =
+                new ArrayList<>();
 
         for (GameRoom room : rooms.values()) {
-            if (room.getVisibility() == GameVisibility.PUBLIC && room.getStatus() == GameRoom.Status.WAITING && !room.isFull()) {
+
+            if (room.getVisibility() == GameVisibility.PUBLIC
+                    && room.getStatus() == GameRoom.Status.WAITING
+                    && !room.isFull()) {
+
                 openPublicGames.add(room);
             }
         }
@@ -77,10 +106,14 @@ public class GameSessionManager {
         return openPublicGames;
     }
 
-    public boolean joinRoom(String gameId, WebSocketSession session, String username) {
+    public boolean joinRoom(
+            String gameId,
+            WebSocketSession session,
+            String username) {
+
         GameRoom room = rooms.get(gameId);
-        
-        if (room == null)  {
+
+        if (room == null) {
             return false;
         }
 
@@ -88,22 +121,30 @@ public class GameSessionManager {
             return false;
         }
 
-        boolean added = room.addPlayer(session, username);
+        boolean added =
+                room.addPlayer(session, username);
 
         if (added) {
+
             System.out.println(
-                    "Client " + session.getId()
-                            + " joined room: " + gameId
+                    "Client "
+                            + session.getId()
+                            + " joined room: "
+                            + gameId
             );
         }
 
-        System.out.println("Players in game: " +room.getPlayerCount());
+        System.out.println(
+                "Players in game: "
+                        + room.getPlayerCount()
+        );
+
         return added;
     }
 
     public void removePlayerFromGame(
-        String gameId,
-        WebSocketSession session) {
+            String gameId,
+            WebSocketSession session) {
 
         GameRoom room = rooms.get(gameId);
 
@@ -114,8 +155,10 @@ public class GameSessionManager {
         room.removePlayer(session);
 
         System.out.println(
-                "Client " + session.getId()
-                        + " left game " + gameId
+                "Client "
+                        + session.getId()
+                        + " left game "
+                        + gameId
         );
 
         System.out.println(
@@ -128,12 +171,15 @@ public class GameSessionManager {
             rooms.remove(gameId);
 
             System.out.println(
-                    "Removed empty game room: " + gameId
+                    "Removed empty game room: "
+                            + gameId
             );
         }
     }
 
-    public void sendToGame(String gameId, String message){
+    public void sendToGame(
+            String gameId,
+            String message) {
 
         GameRoom room = rooms.get(gameId);
 
@@ -141,19 +187,35 @@ public class GameSessionManager {
             return;
         }
 
-        sendToPlayer(room.getPlayer1(), message);
-        sendToPlayer(room.getPlayer2(), message);
+        sendToPlayer(
+                room.getPlayer1(),
+                message
+        );
+
+        sendToPlayer(
+                room.getPlayer2(),
+                message
+        );
     }
 
-    private void sendToPlayer(WebSocketSession session, String message) {
+    private void sendToPlayer(
+            WebSocketSession session,
+            String message) {
 
-        if(session == null || !session.isOpen()) {
+        if (session == null ||
+                !session.isOpen()) {
+
             return;
         }
 
         try {
-            session.sendMessage(new TextMessage(message));
+
+            session.sendMessage(
+                    new TextMessage(message)
+            );
+
         } catch (IOException e) {
+
             System.err.println(
                     "Failed to send message to "
                             + session.getId()

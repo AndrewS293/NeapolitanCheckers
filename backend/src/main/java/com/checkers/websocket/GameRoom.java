@@ -11,9 +11,9 @@ public class GameRoom {
     }
 
     private final String gameId;
+    private final long databaseGameId;
 
     private final GameVisibility visibility;
-
     private final String joinCode;
 
     private WebSocketSession player1;
@@ -26,16 +26,22 @@ public class GameRoom {
 
     public GameRoom(
             String gameId,
+            long databaseGameId,
             GameVisibility visibility,
             String joinCode) {
 
         this.gameId = gameId;
+        this.databaseGameId = databaseGameId;
         this.visibility = visibility;
         this.joinCode = joinCode;
     }
 
     public String getGameId() {
         return gameId;
+    }
+
+    public long getDatabaseGameId() {
+        return databaseGameId;
     }
 
     public GameVisibility getVisibility() {
@@ -58,7 +64,9 @@ public class GameRoom {
         return status;
     }
 
-    public boolean addPlayer(WebSocketSession session, String username) {
+    public boolean addPlayer(
+            WebSocketSession session,
+            String username) {
 
         if (status == Status.FINISHED) {
             return false;
@@ -85,12 +93,14 @@ public class GameRoom {
 
         if (player1 != null &&
                 player1.getId().equals(session.getId())) {
+
             player1 = null;
             player1Username = null;
         }
 
         if (player2 != null &&
                 player2.getId().equals(session.getId())) {
+
             player2 = null;
             player2Username = null;
         }

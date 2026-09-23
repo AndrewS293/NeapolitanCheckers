@@ -1,6 +1,7 @@
 package com.checkers.controller;
 
 import com.checkers.database.MoveDAO;
+import com.checkers.database.GameDAO;
 import com.checkers.websocket.GameRoom;
 import com.checkers.websocket.GameSessionManager;
 import com.checkers.websocket.GameVisibility;
@@ -25,44 +26,64 @@ public class GameController {
     }
 
     @PostMapping
-    public ResponseEntity<?> createGame(@RequestParam GameVisibility visibility) {
+public ResponseEntity<?> createGame(
+        @RequestParam GameVisibility visibility) {
 
-        String gameId = UUID.randomUUID()
+    String gameId = UUID.randomUUID()
+            .toString()
+            .substring(0, 6)
+            .toUpperCase();
+
+    String joinCode = null;
+
+    if (visibility == GameVisibility.PRIVATE) {
+        joinCode = UUID.randomUUID()
                 .toString()
                 .substring(0, 6)
                 .toUpperCase();
+    }
 
-        String joinCode = null;
+    // Create game in Supabase
+    long databaseGameId = GameDAO.createGame(gameId);
 
-        if (visibility == GameVisibility.PRIVATE) {
-            joinCode = UUID.randomUUID()
-                    .toString()
-                    .substring(0, 6)
-                    .toUpperCase();
-        }
+    if (databaseGameId == -1) {
+        return ResponseEntity
+                .status(HttpStatus.INTERNAL_SERVER_ERROR)
+                .body(Map.of(
+                        "error",
+                        "Failed to create game in database"
+                ));
+    }
 
-        GameRoom room = sessionManager.createRoom(gameId, visibility, joinCode);
+    // Create the WebSocket game room
+    GameRoom room = sessionManager.createRoom(
+            gameId,
+            databaseGameId,
+            visibility,
+            joinCode
+    );
 
-        if (joinCode != null) {
-            return ResponseEntity.ok(
-                    Map.of(
-                            "gameId", room.getGameId(),
-                            "joinCode", room.getJoinCode(),
-                            "status", room.getStatus().name(),
-                            "players", room.getPlayerCount()
-                    )
-            );
-        }
-
+    if (joinCode != null) {
         return ResponseEntity.ok(
                 Map.of(
                         "gameId", room.getGameId(),
+                        "databaseGameId", databaseGameId,
+                        "joinCode", room.getJoinCode(),
                         "status", room.getStatus().name(),
                         "players", room.getPlayerCount()
                 )
         );
     }
 
+    return ResponseEntity.ok(
+            Map.of(
+                    "gameId", room.getGameId(),
+                    "databaseGameId", databaseGameId,
+                    "status", room.getStatus().name(),
+                    "players", room.getPlayerCount()
+            )
+    );
+}
     @GetMapping("/open")
     public ResponseEntity<?> getOpenGames() {
 
