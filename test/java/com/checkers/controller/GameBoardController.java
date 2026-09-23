@@ -1,6 +1,9 @@
 package com.checkers.controller;
 
 import com.checkers.Main;
+import com.checkers.logic.Board;
+import com.checkers.logic.GameLogic;
+import com.checkers.logic.Piece;
 
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
@@ -21,7 +24,16 @@ public class GameBoardController {
     private static final int BOARD_SIZE = 8;
     private static final double SQUARE_SIZE = 65;
 
+    private GameLogic gameLogic;
+    private BorderPane root;
+    private GridPane board;
+    private Label gameStatus;
+    private int selectedIndex = -1;
+
+
     public Scene createScene() {
+
+        gameLogic = new GameLogic();
 
         Label title = new Label("Neapolitan Checkers");
         title.setStyle(
@@ -29,17 +41,22 @@ public class GameBoardController {
                 "-fx-font-weight: bold;"
         );
 
-        Label gameStatus = new Label("Red player's turn");
-        gameStatus.setStyle("-fx-font-size: 16px;");
+        gameStatus = new Label();
+        gameStatus.setStyle("-fx-font-size: 16px");
 
-        GridPane board = createBoard();
+        updateGameStatus();
+
+        board = createBoard();
         board.setAlignment(Pos.CENTER);
 
         Button newGameButton = new Button("New Game");
         Button backButton = new Button("Back to Menu");
 
         newGameButton.setOnAction(event -> {
-            gameStatus.setText("A new game has started!");
+            gameLogic = new GameLogic();
+            selectedIndex = -1;
+            refreshBoard();
+            updateGameStatus();
         });
 
         backButton.setOnAction(event -> {
@@ -62,7 +79,7 @@ public class GameBoardController {
 
         topSection.setAlignment(Pos.CENTER);
 
-        BorderPane root = new BorderPane();
+        root = new BorderPane();
 
         root.setPadding(new Insets(25));
         root.setTop(topSection);
@@ -114,7 +131,7 @@ public class GameBoardController {
 
         if (darkSquare) {
             background.setFill(
-                    Color.SADDLEBROWN
+                    Color.SADDLEBROWN //we can make a variable here for board colors
             );
         } else {
             background.setFill(
@@ -124,33 +141,137 @@ public class GameBoardController {
 
         square.getChildren().add(background);
 
-        if (darkSquare && row < 3) {
-            Circle blackPiece = createPiece(
-                    Color.BLACK
-            );
+        int index = Board.toIndex(row, column);
 
-            square.getChildren().add(blackPiece);
-        }
+        if (index != -1) {
+            Piece piece = gameLogic.getBoard().getPiece(index);
 
-        if (darkSquare && row > 4) {
-            Circle redPiece = createPiece(
-                    Color.FIREBRICK
-            );
+            if (piece !=null && !piece.isEmpty()) {
+                Color pieceColor =
+                        piece.isBlack()
+                                ? Color.BLACK //again we can have variables for colors
+                                : Color.FIREBRICK;
 
-            square.getChildren().add(redPiece);
+                Circle pieceCircle =
+                        createPiece(piece);
+
+                square.getChildren().add(pieceCircle);
+            }
+
+            final int finalIndex = index;
+
+            square.setOnMouseClicked(event -> {
+                handleSquareClick(finalIndex);
+            });
         }
 
         return square;
     }
 
-    private Circle createPiece(Color color) {
+    private Circle createPiece(Piece piece) {
 
-        Circle piece = new Circle(23);
+        Color color;
 
-        piece.setFill(color);
-        piece.setStroke(Color.WHITE);
-        piece.setStrokeWidth(2);
+        if (piece.isBlack()) {
+            color = Color.BLACK;
+        } else if (piece.isRed()) {
+            color = Color.FIREBRICK;
+        } else {
+            return null; 
+        }
 
-        return piece;
+        Circle circle = new Circle(23);
+
+        circle.setFill(color);
+        circle.setStroke(Color.WHITE);
+        circle.setStrokeWidth(2);
+
+
+        if(piece.isKing()) {
+            circle.setStroke(Color.GOLD);
+            circle.setStrokeWidth(4);
+        }
+
+        return circle;
+    }
+
+    private void handleSquareClick(int clickedIndex) {
+        if (selectedIndex == -1) {
+
+            if (gameLogic.isCurrentPlayerPiece(clickedIndex)) {
+
+                selectedIndex = clickedIndex;
+
+                gameStatus.setText(
+                        "Piece selected. Choose a destination."
+                );
+
+            } else {
+
+                gameStatus.setText(
+                        "Select one of your pieces."
+                );
+            }
+
+            return;
+        }
+
+        boolean moved =
+                gameLogic.move(
+                        selectedIndex,
+                        clickedIndex
+                );
+
+        if (moved) {
+
+            selectedIndex = -1;
+
+            refreshBoard();
+            updateGameStatus();
+
+        } else {
+            if (gameLogic.isCurrentPlayerPiece(clickedIndex)) {
+
+                selectedIndex = clickedIndex;
+
+                gameStatus.setText(
+                        "Piece selected. Choose a destination."
+                );
+
+            } else {
+
+                gameStatus.setText(
+                        "Invalid move. Try again."
+                );
+            }
+        }
+    }
+
+    private void refreshBoard() {
+
+        GridPane newBoard = createBoard();
+
+        newBoard.setAlignment(Pos.CENTER);
+
+        board = newBoard;
+
+        root.setCenter(board);
+    }
+
+    private void updateGameStatus() {
+
+        if (gameLogic.getCurrentPlayer()
+                == GameLogic.red_player) {
+
+            gameStatus.setText(
+                    "Red player's turn"
+            );
+
+        } else {
+
+            gameStatus.setText(
+                    "Black player's turn"
+            );
+        }
     }
 }
