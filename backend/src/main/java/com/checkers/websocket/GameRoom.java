@@ -9,11 +9,12 @@ public class GameRoom {
         ACTIVE,
         FINISHED
     }
-
+    //Our gameID that identifies the game room
     private final String gameId;
+    //The ID that goes in our database 
     private final long databaseGameId;
 
-    private final GameVisibility visibility;
+    private final GameVisibility visibility; //PUBLIC or PRIVATE
     private final String joinCode;
 
     private WebSocketSession player1;
@@ -63,6 +64,7 @@ public class GameRoom {
     public Status getStatus() {
         return status;
     }
+
 
     public boolean addPlayer(
             WebSocketSession session,
