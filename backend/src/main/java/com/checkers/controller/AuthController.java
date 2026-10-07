@@ -22,10 +22,13 @@ public class AuthController {
         this.userService = userService;
     }
 
+
+    //Our Registration endpoint
    @PostMapping("/register")
     public ResponseEntity<?> register(
             @RequestBody RegisterRequest request) {
 
+        //if valid puts into databse        
         try {
 
             User user = userService.register(request);
@@ -34,6 +37,7 @@ public class AuthController {
                     new UserResponse(user)
             );
 
+        //if invalid returns error message
         } catch (IllegalArgumentException e) {
 
             return ResponseEntity
@@ -47,30 +51,39 @@ public class AuthController {
         }
     }
 
+
+    //Our Login endpoint
     @PostMapping("/login")
     public ResponseEntity<UserResponse> login(
             @RequestBody LoginRequest request,
             HttpSession session) {
 
+        //sends the username and password to the service to check if valid
         User user = userService.login(
                 request.getUsername(),
                 request.getPassword()
         );
 
+        //if valid, sets the session attributes
         session.setAttribute("userId", user.getId());
         session.setAttribute("username", user.getUsername());
 
         return ResponseEntity.ok(new UserResponse(user));
     }
 
+
+    //Our Logout endpoint
     @PostMapping("/logout")
     public ResponseEntity<Void> logout(HttpSession session) {
 
+        //just invalidates the session, thus logging the user out
         session.invalidate();
 
         return ResponseEntity.ok().build();
     }
     
+
+    //Our endpoint to get the current logged in user
     @GetMapping("/me")
     public ResponseEntity<UserResponse> me(HttpSession session) {
 

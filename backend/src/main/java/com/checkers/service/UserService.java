@@ -22,6 +22,8 @@ public class UserService {
 
     public User register(RegisterRequest request) {
        
+
+        //all error messages for registration
         if (request.getUsername().isBlank()) {
         throw new IllegalArgumentException("Username is required");
         }
@@ -85,7 +87,7 @@ public class UserService {
 
         }
 
-
+        //if no errors creates a new user and saves it to the database
         User user = new User();
 
         user.setUsername(request.getUsername());
@@ -98,8 +100,10 @@ public class UserService {
         return userRepository.save(user);
     }
 
-    public User login(String username, String password) {
 
+
+    public User login(String username, String password) {
+        //checks if the username exists and if the password matches the hashed password in the database
         User user = userRepository.findByUsername(username)
                 .orElseThrow(() ->
                         new IllegalArgumentException("Invalid username or password"));
@@ -111,6 +115,7 @@ public class UserService {
         return user;
     }
 
+    //searches for a user by their id, if not found throws an error
     public User findById(Long id) {
 
         return userRepository.findById(id)
