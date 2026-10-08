@@ -10,7 +10,7 @@ import org.springframework.web.socket.WebSocketSession;
 public class GameRoomTest {
 
 
-    private GameRoom gameSession; // Replace with your actual class name
+    private GameRoom gameSession; 
     private WebSocketSession mockSession1;
     private WebSocketSession mockSession2;
     private WebSocketSession mockSession3;
