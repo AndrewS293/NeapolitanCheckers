@@ -41,9 +41,15 @@ public class MainMenuController {
                 );
 
         Button playButton =
-                new Button("Play Checkers"); 
+                new Button("Play Locally"); 
         playButton.setOnAction(event -> {
                 Main.showGameBoard();
+        });
+
+        Button playOnlineButton =
+                new Button("Play Online");
+        playOnlineButton.setOnAction(event -> {
+                Main.showGameLobby();
         });
                 
         Button logoutButton =
@@ -76,6 +82,7 @@ public class MainMenuController {
                 title,
                 welcome,
                 playButton,
+                playOnlineButton,
                 logoutButton
         );
 

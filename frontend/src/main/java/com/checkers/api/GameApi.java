@@ -1,0 +1,122 @@
+package com.checkers.api;
+
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
+
+import java.net.URI;
+import java.net.http.HttpClient;
+import java.net.http.HttpRequest;
+import java.net.http.HttpResponse;
+
+public class GameApi {
+
+    private static final String BASE_URL =
+            "https://neapolitancheckers.onrender.com/api/games";
+
+    private final HttpClient client;
+    private final ObjectMapper mapper;
+
+    public GameApi(AuthApi authApi) {
+        this.client = authApi.getClient();
+        this.mapper = new ObjectMapper();
+    }
+
+    public JsonNode createGame(String visibility)
+            throws Exception {
+
+        String url = BASE_URL
+                + "?visibility="
+                + visibility;
+
+        HttpRequest request = HttpRequest.newBuilder()
+                .uri(URI.create(url))
+                .POST(HttpRequest.BodyPublishers.noBody())
+                .header("Accept", "application/json")
+                .build();
+
+        return send(request);
+    }
+
+    public JsonNode getOpenGames()
+            throws Exception {
+
+        HttpRequest request = HttpRequest.newBuilder()
+                .uri(URI.create(BASE_URL + "/open"))
+                .GET()
+                .header("Accept", "application/json")
+                .build();
+
+        return send(request);
+    }
+
+    public JsonNode joinPublicGame(String gameId)
+            throws Exception {
+
+        HttpRequest request = HttpRequest.newBuilder()
+                .uri(URI.create(
+                        BASE_URL + "/" + gameId + "/join"
+                ))
+                .POST(HttpRequest.BodyPublishers.noBody())
+                .header("Accept", "application/json")
+                .build();
+
+        return send(request);
+    }
+
+    public JsonNode joinPrivateGame(String joinCode)
+            throws Exception {
+
+        HttpRequest request = HttpRequest.newBuilder()
+                .uri(URI.create(
+                        BASE_URL + "/join/" + joinCode
+                ))
+                .POST(HttpRequest.BodyPublishers.noBody())
+                .header("Accept", "application/json")
+                .build();
+
+        return send(request);
+    }
+
+    public JsonNode getGame(String gameId)
+            throws Exception {
+
+        HttpRequest request = HttpRequest.newBuilder()
+                .uri(URI.create(
+                        BASE_URL + "/" + gameId
+                ))
+                .GET()
+                .header("Accept", "application/json")
+                .build();
+
+        return send(request);
+    }
+
+    private JsonNode send(HttpRequest request)
+            throws Exception {
+
+        HttpResponse<String> response = client.send(
+                request,
+                HttpResponse.BodyHandlers.ofString()
+        );
+
+        JsonNode body = mapper.readTree(response.body());
+
+        if (response.statusCode() < 200
+                || response.statusCode() >= 300) {
+
+            JsonNode error = body == null
+                    ? null
+                    : body.get("error");
+
+            String message =
+                    error != null
+                            ? error.asText()
+                            : "Game request failed with HTTP "
+                                    + response.statusCode();
+
+            throw new Exception(message);
+        }
+
+        return body;
+    }
+}

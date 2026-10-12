@@ -177,51 +177,66 @@ public class GameSessionManager {
         }
     }
 
-    public void sendToGame(
-            String gameId,
-            String message) {
-
+    
+    public void sendToGame(String gameId, String message) {
         GameRoom room = rooms.get(gameId);
 
         if (room == null) {
+            System.err.println(
+                "Cannot broadcast: game room " + gameId + " not found."
+            );
             return;
         }
 
-        sendToPlayer(
-                room.getPlayer1(),
-                message
+        WebSocketSession player1 = room.getPlayer1();
+        WebSocketSession player2 = room.getPlayer2();
+
+        System.out.println(
+            "Broadcasting to game " + gameId
+                + " | Player 1 session: "
+                + (player1 == null ? "null" : player1.getId())
+                + " | Player 2 session: "
+                + (player2 == null ? "null" : player2.getId())
         );
 
-        sendToPlayer(
-                room.getPlayer2(),
-                message
-        );
+        sendToPlayer(player1, message);
+        sendToPlayer(player2, message);
     }
 
     private void sendToPlayer(
             WebSocketSession session,
             String message) {
 
-        if (session == null ||
-                !session.isOpen()) {
+        if (session == null) {
+            System.err.println("Broadcast skipped: session is null.");
+            return;
+        }
 
+        if (!session.isOpen()) {
+            System.err.println(
+                "Broadcast skipped: session " + session.getId()
+                    + " is closed."
+            );
             return;
         }
 
         try {
+            session.sendMessage(new TextMessage(message));
 
-            session.sendMessage(
-                    new TextMessage(message)
+            System.out.println(
+                "Message sent to session " + session.getId()
+                    + ": " + message
             );
 
         } catch (IOException e) {
-
             System.err.println(
-                    "Failed to send message to "
-                            + session.getId()
+                "Failed to send message to session "
+                    + session.getId()
             );
+            e.printStackTrace();
         }
     }
+
 
     public int getConnectionCount() {
         return sessions.size();

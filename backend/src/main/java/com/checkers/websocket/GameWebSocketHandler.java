@@ -6,6 +6,9 @@ import org.springframework.web.socket.TextMessage;
 import org.springframework.web.socket.WebSocketSession;
 import org.springframework.web.socket.handler.TextWebSocketHandler;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.JsonNode;
+import com.checkers.logic.Board;
+import com.checkers.logic.GameLogic;
 
 @Component
 public class GameWebSocketHandler extends TextWebSocketHandler {
@@ -51,9 +54,24 @@ public class GameWebSocketHandler extends TextWebSocketHandler {
 
         GameRoom room = sessionManager.getRoom(gameId);
 
+        System.out.println(
+            "BROADCAST CALLED: gameId=" + gameId
+                + ", type=" + type
+        );
+
         if (room == null) {
+            System.err.println(
+                "BROADCAST FAILED: room not found for " + gameId
+            );
             return;
         }
+
+        System.out.println(
+            "BROADCAST ROOM: players=" + room.getPlayerCount()
+                + ", status=" + room.getStatus()
+                + ", player1=" + room.getPlayer1Username()
+                + ", player2=" + room.getPlayer2Username()
+        );
 
         WebSocketMessage webSocketMessage =
                 new WebSocketMessage(
@@ -79,7 +97,7 @@ public class GameWebSocketHandler extends TextWebSocketHandler {
             );
             return;
         }
-
+        System.out.println("BROADCAST JSON: " + json);
         sessionManager.sendToGame(gameId, json);
     }
 
@@ -200,39 +218,163 @@ public class GameWebSocketHandler extends TextWebSocketHandler {
         }
     }
 
+   
+    
     @Override
     protected void handleTextMessage(
             WebSocketSession session,
-            TextMessage message) {
+            TextMessage textMessage) throws Exception {
 
         String gameId = getGameId(session);
-
-        if (gameId == null) {
-            return;
-        }
-
         GameRoom room = sessionManager.getRoom(gameId);
 
         if (room == null) {
+            sendMessage(session, new WebSocketMessage(
+                    "ERROR", gameId, 0, 0, "ERROR",
+                    null, "Game room not found."
+            ));
+            return;
+        }
+
+        String username = (String) session.getAttributes().get("username");
+
+        int playerNumber;
+        if (username != null
+                && username.equals(room.getPlayer1Username())) {
+            playerNumber = 1;
+        } else if (username != null
+                && username.equals(room.getPlayer2Username())) {
+            playerNumber = 2;
+        } else {
+            sendMessage(session, new WebSocketMessage(
+                    "ERROR", gameId, 0, room.getPlayerCount(),
+                    room.getStatus().name(), username,
+                    "You are not a player in this room."
+            ));
+            return;
+        }
+
+        JsonNode incoming = objectMapper.readTree(
+                textMessage.getPayload()
+        );
+
+        String type = incoming.hasNonNull("type")
+                ? incoming.get("type").asText()
+                : "";
+
+        if (!"MOVE".equals(type)) {
+            sendMessage(session, new WebSocketMessage(
+                    "ERROR", gameId, playerNumber,
+                    room.getPlayerCount(), room.getStatus().name(),
+                    username, "Unsupported message type: " + type
+            ));
+            return;
+        }
+
+        if (room.getStatus() != GameRoom.Status.ACTIVE) {
+            sendMessage(session, new WebSocketMessage(
+                    "ERROR", gameId, playerNumber,
+                    room.getPlayerCount(), room.getStatus().name(),
+                    username, "The game has not started."
+            ));
+            return;
+        }
+
+        JsonNode move = incoming.get("message");
+
+        if (move == null || !move.isObject()) {
+            sendMessage(session, new WebSocketMessage(
+                    "ERROR", gameId, playerNumber,
+                    room.getPlayerCount(), room.getStatus().name(),
+                    username, "Invalid move payload."
+            ));
+            return;
+        }
+
+        
+        JsonNode fromRowNode = move.get("fromRow");
+        JsonNode fromColNode = move.get("fromCol");
+        JsonNode toRowNode = move.get("toRow");
+        JsonNode toColNode = move.get("toCol");
+
+        if (fromRowNode == null || !fromRowNode.canConvertToInt()
+                || fromColNode == null || !fromColNode.canConvertToInt()
+                || toRowNode == null || !toRowNode.canConvertToInt()
+                || toColNode == null || !toColNode.canConvertToInt()) {
+            sendMessage(session, new WebSocketMessage(
+                    "ERROR", gameId, playerNumber,
+                    room.getPlayerCount(), room.getStatus().name(),
+                    username, "Move coordinates are missing or invalid."
+            ));
+            return;
+        }
+
+        int fromRow = fromRowNode.asInt();
+        int fromCol = fromColNode.asInt();
+        int toRow = toRowNode.asInt();
+        int toCol = toColNode.asInt();
+
+        // Convert the 8x8 board coordinates into the 32 playable squares.
+        int start = Board.toIndex(fromRow, fromCol);
+        int end = Board.toIndex(toRow, toCol);
+
+        if (start == -1 || end == -1) {
+            sendMessage(session, new WebSocketMessage(
+                    "ERROR", gameId, playerNumber,
+                    room.getPlayerCount(), room.getStatus().name(),
+                    username, "Move uses an invalid or unplayable square."
+            ));
+            return;
+        }
+
+        GameLogic gameLogic = room.getGameLogic();
+        boolean accepted;
+
+        // Validate the turn and apply the move atomically for this room.
+        synchronized (room) {
+            int expectedPlayer = gameLogic.getCurrentPlayer()
+                    == GameLogic.red_player ? 1 : 2;
+
+            if (playerNumber != expectedPlayer) {
+                sendMessage(session, new WebSocketMessage(
+                        "ERROR", gameId, playerNumber,
+                        room.getPlayerCount(), room.getStatus().name(),
+                        username, "It is not your turn."
+                ));
+                return;
+            }
+
+            accepted = gameLogic.move(start, end);
+        }
+
+        if (!accepted) {
+            sendMessage(session, new WebSocketMessage(
+                    "ERROR", gameId, playerNumber,
+                    room.getPlayerCount(), room.getStatus().name(),
+                    username, "Illegal move. The move was rejected."
+            ));
             return;
         }
 
         System.out.println(
-                "Game " + gameId
-                        + " | Client "
-                        + session.getId()
-                        + ": "
-                        + message.getPayload()
+                "SERVER ACCEPTED MOVE: game=" + gameId
+                        + ", player=" + playerNumber
+                        + ", " + fromRow + "," + fromCol
+                        + " -> " + toRow + "," + toCol
         );
 
+        // Only broadcast moves accepted by the server.
         broadcast(
                 gameId,
-                "GAME_MESSAGE",
-                getPlayerNumber(room, session),
-                null,
-                message.getPayload()
+                "MOVE",
+                playerNumber,
+                username,
+                move.toString()
         );
+
     }
+
+
 
    @Override
 public void afterConnectionClosed(

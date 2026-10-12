@@ -5,6 +5,8 @@ import com.checkers.api.AuthApi;
 import com.checkers.controller.LoginController;
 import com.checkers.controller.MainMenuController;
 import com.checkers.controller.RegisterController;
+import com.checkers.api.GameApi;
+import com.checkers.controller.GameLobbyController;
 
 import javafx.application.Application;
 import javafx.scene.Scene;
@@ -17,6 +19,9 @@ public class Main extends Application {
     private static final AuthApi authApi =
             new AuthApi();
 
+    private static final GameApi gameApi =
+            new GameApi(authApi);
+
     @Override
     public void start(Stage primaryStage) {
 
@@ -28,18 +33,20 @@ public class Main extends Application {
 
         stage.show();
     }
+
     public static void showGameBoard() {
 
-    GameBoardController controller =
-            new GameBoardController();
+        GameBoardController controller =
+                new GameBoardController();
 
-    Scene scene = controller.createScene();
+        Scene scene = controller.createScene();
 
-    stage.setScene(scene);
+        stage.setScene(scene);
 
-    stage.setWidth(650);
-    stage.setHeight(720);
+        stage.setWidth(700);
+        stage.setHeight(900);
     }
+
     public static AuthApi getAuthApi() {
         return authApi;
     }
@@ -53,8 +60,8 @@ public class Main extends Application {
 
         stage.setScene(scene);
 
-        stage.setWidth(500);
-        stage.setHeight(450);
+        stage.setWidth(540);
+        stage.setHeight(700);
     }
 
     public static void showRegister() {
@@ -66,8 +73,8 @@ public class Main extends Application {
 
         stage.setScene(scene);
 
-        stage.setWidth(500);
-        stage.setHeight(500);
+        stage.setWidth(540);
+        stage.setHeight(700);
     }
 
     public static void showMainMenu() {
@@ -79,9 +86,32 @@ public class Main extends Application {
 
         stage.setScene(scene);
 
-        stage.setWidth(500);
-        stage.setHeight(450);
+        stage.setWidth(540);
+        stage.setHeight(700);
     }
+
+    public static void showGameLobby() {
+
+        GameLobbyController controller =
+                new GameLobbyController();
+
+        Scene scene = controller.createScene();
+
+        stage.setScene(scene);
+        stage.setWidth(540);
+        stage.setHeight(700);
+    }
+
+    
+    
+    public static void showOnlineGameBoard(GameBoardController controller) {
+        Scene scene = controller.createScene();
+        stage.setScene(scene);
+        stage.setWidth(700);
+        stage.setHeight(900);
+    }
+
+
 
     public static void main(String[] args) {
         launch(args);

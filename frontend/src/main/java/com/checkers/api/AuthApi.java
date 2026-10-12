@@ -199,5 +199,9 @@ public class AuthApi {
 
         return fallbackMessage;
     }
+
+    public HttpClient getClient() {
+        return client;
+        }
 }
 

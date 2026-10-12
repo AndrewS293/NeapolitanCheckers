@@ -1,6 +1,7 @@
 package com.checkers.websocket;
 
 import org.springframework.web.socket.WebSocketSession;
+import com.checkers.logic.GameLogic;
 
 public class GameRoom {
 
@@ -24,6 +25,8 @@ public class GameRoom {
     private String player2Username;
 
     private Status status = Status.WAITING;
+
+    private GameLogic gameLogic = new GameLogic();
 
     public GameRoom(
             String gameId,
@@ -152,5 +155,9 @@ public class GameRoom {
 
     public String getPlayer2Username() {
         return player2Username;
+    }
+
+    public GameLogic getGameLogic() {
+        return gameLogic;
     }
 }
