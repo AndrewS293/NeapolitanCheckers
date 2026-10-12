@@ -1,6 +1,7 @@
 package com.checkers.websocket;
 
 import org.springframework.web.socket.WebSocketSession;
+import com.checkers.logic.GameLogic;
 
 public class GameRoom {
 
@@ -9,11 +10,12 @@ public class GameRoom {
         ACTIVE,
         FINISHED
     }
-
+    //Our gameID that identifies the game room
     private final String gameId;
+    //The ID that goes in our database 
+    private final long databaseGameId;
 
-    private final GameVisibility visibility;
-
+    private final GameVisibility visibility; //PUBLIC or PRIVATE
     private final String joinCode;
 
     private WebSocketSession player1;
@@ -24,18 +26,26 @@ public class GameRoom {
 
     private Status status = Status.WAITING;
 
+    private GameLogic gameLogic = new GameLogic();
+
     public GameRoom(
             String gameId,
+            long databaseGameId,
             GameVisibility visibility,
             String joinCode) {
 
         this.gameId = gameId;
+        this.databaseGameId = databaseGameId;
         this.visibility = visibility;
         this.joinCode = joinCode;
     }
 
     public String getGameId() {
         return gameId;
+    }
+
+    public long getDatabaseGameId() {
+        return databaseGameId;
     }
 
     public GameVisibility getVisibility() {
@@ -58,7 +68,10 @@ public class GameRoom {
         return status;
     }
 
-    public boolean addPlayer(WebSocketSession session, String username) {
+
+    public boolean addPlayer(
+            WebSocketSession session,
+            String username) {
 
         if (status == Status.FINISHED) {
             return false;
@@ -85,12 +98,14 @@ public class GameRoom {
 
         if (player1 != null &&
                 player1.getId().equals(session.getId())) {
+
             player1 = null;
             player1Username = null;
         }
 
         if (player2 != null &&
                 player2.getId().equals(session.getId())) {
+
             player2 = null;
             player2Username = null;
         }
@@ -140,5 +155,9 @@ public class GameRoom {
 
     public String getPlayer2Username() {
         return player2Username;
+    }
+
+    public GameLogic getGameLogic() {
+        return gameLogic;
     }
 }

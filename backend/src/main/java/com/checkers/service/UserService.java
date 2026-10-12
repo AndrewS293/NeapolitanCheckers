@@ -22,12 +22,23 @@ public class UserService {
 
     public User register(RegisterRequest request) {
        
+
+        //all error messages for registration
         if (request.getUsername().isBlank()) {
         throw new IllegalArgumentException("Username is required");
         }
 
-        //check username length
-        //no special characters in username
+        if (request.getUsername().length() < 3) {
+            throw new IllegalArgumentException("Username must be at least 3 characters");
+        }
+
+        if (!request.getUsername().matches("^[a-zA-Z0-9_]+$")) {
+            throw new IllegalArgumentException("Username can only contain letters, numbers, and underscores");
+        }
+
+        if (request.getUsername().length() > 25) {
+            throw new IllegalArgumentException("Username cannot exceed 25 characters");
+        }
 
 
         if (userRepository.existsByUsername(request.getUsername())) {
@@ -51,7 +62,24 @@ public class UserService {
 
         }
 
-        //other password requirements 
+        if (request.getPassword().length() > 50) {
+            throw new IllegalArgumentException("Password cannot exceed 50 characters");
+        }
+
+        if (request.getPassword().contains(" ")) {
+            throw new IllegalArgumentException("Password cannot contain spaces");
+        }
+
+        if (request.getPassword().matches(".*[<>\"'%;)(&+].*")) {
+            throw new IllegalArgumentException("Password cannot contain special characters like <, >, \", ', %, ;, ), (, &, +");
+        }
+        
+        if (request.getPassword().matches(".*[A-Z].*") &&
+            request.getPassword().matches(".*[a-z].*") &&
+            request.getPassword().matches(".*\\d.*")) {
+        } else {
+            throw new IllegalArgumentException("Password must contain at least one uppercase letter, one lowercase letter, and one number");
+        }
 
         if (request.getPassword().length() < 8) {
 
@@ -59,7 +87,7 @@ public class UserService {
 
         }
 
-
+        //if no errors creates a new user and saves it to the database
         User user = new User();
 
         user.setUsername(request.getUsername());
@@ -72,8 +100,10 @@ public class UserService {
         return userRepository.save(user);
     }
 
-    public User login(String username, String password) {
 
+
+    public User login(String username, String password) {
+        //checks if the username exists and if the password matches the hashed password in the database
         User user = userRepository.findByUsername(username)
                 .orElseThrow(() ->
                         new IllegalArgumentException("Invalid username or password"));
@@ -85,6 +115,7 @@ public class UserService {
         return user;
     }
 
+    //searches for a user by their id, if not found throws an error
     public User findById(Long id) {
 
         return userRepository.findById(id)
