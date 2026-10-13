@@ -49,25 +49,32 @@ public class GameLogic {
     // attempt to make a move
     public boolean move(int start, int end) {
         if (!board.isValidIndex(start) || !board.isValidIndex(end)) {
+            //System.out.println("Invalid move: start=" + start + ", end=" + end);
             return false; // invalid indices
         }
 
         Piece piece = board.getPiece(start);
         if (piece == null || piece.isEmpty() || !isCurrentPlayerPiece(start)) {
+            //System.out.println("Invalid move: no piece to move or not current player's piece at start=" + start);
             return false; // no piece to move or not current player's piece
         }
 
         if (!board.isEmpty(end)) {
+            //System.out.println("Invalid move: destination square is not empty at end=" + end);
             return false; // destination square is not empty
         }
 
         Move move = new Move(start, end);
 
         if (!isValidMove(start, end)) {
+            //System.out.println("Invalid move: move is not valid from start=" + start + " to end=" + end);
             return false; // move is not valid
         }
 
-        
+        if (!move.isJump() && hasAvailableCapture()) {
+            return false;
+        }
+
         // move the piece
         //add move to database and sound and animation ect.
         board.setPiece(end, piece);
@@ -147,6 +154,27 @@ public class GameLogic {
             // black can only jump downward
             if (piece.isBlack()) {
                 return rowDiff == 2;
+            }
+        }
+        return false;
+    }
+
+    private boolean hasAvailableCapture() {
+        for (int index = 0; index < Board.playable_squares; index++) {
+            if (!isCurrentPlayerPiece(index)) {
+                continue;
+            }
+
+            int row = Board.getRow(index);
+            int col = Board.getCol(index);
+            for (int rowOffset : new int[] {-2, 2}) {
+                for (int colOffset : new int[] {-2, 2}) {
+                    int destination = Board.toIndex(row + rowOffset, col + colOffset);
+                    if (destination >= 0 && board.isEmpty(destination)
+                            && isValidMove(index, destination)) {
+                        return true;
+                    }
+                }
             }
         }
         return false;

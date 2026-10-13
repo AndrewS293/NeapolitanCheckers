@@ -245,10 +245,10 @@ public class GameBoardController {
         if (selectedIndex != -1 && selectedIndex != clickedIndex) {
             
             if (onlineMode) {
-                int fromRow = selectedIndex / 8;
-                int fromCol = selectedIndex % 8;
-                int toRow = clickedIndex / 8;
-                int toCol = clickedIndex % 8;
+                int fromRow = Board.getRow(selectedIndex);
+                int fromCol = Board.getCol(selectedIndex);
+                int toRow = Board.getRow(clickedIndex);
+                int toCol = Board.getCol(clickedIndex);
 
                 System.out.println(
                     "Destination selected: from=" + selectedIndex
@@ -258,7 +258,6 @@ public class GameBoardController {
                 );
 
                 requestMove(fromRow, fromCol, toRow, toCol);
-
                 return;
             }
 
@@ -452,8 +451,13 @@ public class GameBoardController {
                         ? "Processing our own echoed move."
                         : "Processing opponent's move.");
 
-                int start = fromRow * 8 + fromCol;
-                int end = toRow * 8 + toCol;
+                int start = Board.toIndex(fromRow, fromCol);
+                int end = Board.toIndex(toRow, toCol);
+
+                if (start == -1 || end == -1) {
+                    System.err.println("Server sent invalid or unplayable coordinates.");
+                    return;
+                }
 
                 boolean moved = gameLogic.move(start, end);
 
