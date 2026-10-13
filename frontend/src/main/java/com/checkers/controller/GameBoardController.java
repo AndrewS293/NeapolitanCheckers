@@ -1,5 +1,8 @@
 package com.checkers.controller;
 
+import javafx.scene.control.Alert;
+import java.util.Collections;
+import java.util.List;
 import com.checkers.Main;
 import com.checkers.logic.Board;
 import com.checkers.logic.GameLogic;
@@ -19,14 +22,10 @@ import javafx.scene.paint.Color;
 import javafx.scene.shape.Circle;
 import javafx.scene.shape.Rectangle;
 
-
 import com.checkers.websocket.GameWebSocketClient;
 import com.fasterxml.jackson.databind.JsonNode;
 import javafx.application.Platform;
 import com.fasterxml.jackson.databind.ObjectMapper;
-
-
-
 
 public class GameBoardController {
     private boolean onlineMode = false;
@@ -35,7 +34,6 @@ public class GameBoardController {
     private int onlinePlayerNumber;
     private GameWebSocketClient webSocketClient;
     private final ObjectMapper objectMapper = new ObjectMapper();
-
 
     private static final int BOARD_SIZE = 8;
     private static final double SQUARE_SIZE = 65;
@@ -46,6 +44,11 @@ public class GameBoardController {
     private Label gameStatus;
     private int selectedIndex = -1;
 
+    // Stores the squares where the selected piece is allowed to move.
+    private List<Integer> legalDestinations = Collections.emptyList();
+
+    // Prevents the game-over message from appearing more than once.
+    private boolean gameOverMessageShown = false;
 
     public Scene createScene() {
 
@@ -54,8 +57,7 @@ public class GameBoardController {
         Label title = new Label("Neapolitan Checkers");
         title.setStyle(
                 "-fx-font-size: 28px;" +
-                "-fx-font-weight: bold;"
-        );
+                        "-fx-font-weight: bold;");
 
         gameStatus = new Label();
         gameStatus.setStyle("-fx-font-size: 16px");
@@ -71,6 +73,8 @@ public class GameBoardController {
         newGameButton.setOnAction(event -> {
             gameLogic = new GameLogic();
             selectedIndex = -1;
+            legalDestinations = Collections.emptyList();
+            gameOverMessageShown = false;
             refreshBoard();
             updateGameStatus();
         });
@@ -82,16 +86,14 @@ public class GameBoardController {
         HBox buttons = new HBox(
                 15,
                 newGameButton,
-                backButton
-        );
+                backButton);
 
         buttons.setAlignment(Pos.CENTER);
 
         VBox topSection = new VBox(
                 10,
                 title,
-                gameStatus
-        );
+                gameStatus);
 
         topSection.setAlignment(Pos.CENTER);
 
@@ -104,8 +106,7 @@ public class GameBoardController {
 
         BorderPane.setMargin(
                 board,
-                new Insets(20, 0, 20, 0)
-        );
+                new Insets(20, 0, 20, 0));
 
         return new Scene(root);
     }
@@ -116,12 +117,9 @@ public class GameBoardController {
 
         for (int row = 0; row < BOARD_SIZE; row++) {
 
-            for (int column = 0;
-                 column < BOARD_SIZE;
-                 column++) {
+            for (int column = 0; column < BOARD_SIZE; column++) {
 
-                StackPane square =
-                        createSquare(row, column);
+                StackPane square = createSquare(row, column);
 
                 board.add(square, column, row);
             }
@@ -136,23 +134,19 @@ public class GameBoardController {
 
         StackPane square = new StackPane();
 
-        Rectangle background =
-                new Rectangle(
-                        SQUARE_SIZE,
-                        SQUARE_SIZE
-                );
+        Rectangle background = new Rectangle(
+                SQUARE_SIZE,
+                SQUARE_SIZE);
 
-        boolean darkSquare =
-                (row + column) % 2 != 0;
+        boolean darkSquare = (row + column) % 2 != 0;
 
         if (darkSquare) {
             background.setFill(
-                    Color.SADDLEBROWN //we can make a variable here for board colors
+                    Color.SADDLEBROWN // we can make a variable here for board colors
             );
         } else {
             background.setFill(
-                    Color.BISQUE
-            );
+                    Color.BISQUE);
         }
 
         square.getChildren().add(background);
@@ -160,18 +154,31 @@ public class GameBoardController {
         int index = Board.toIndex(row, column);
 
         if (index != -1) {
+            // Gold marks the selected piece. Green marks legal destinations.
+            if (index == selectedIndex) {
+                background.setStroke(Color.GOLD);
+                background.setStrokeWidth(4);
+            } else if (legalDestinations.contains(index)) {
+                background.setFill(Color.DARKSEAGREEN);
+                background.setStroke(Color.LIMEGREEN);
+                background.setStrokeWidth(3);
+            }
+
             Piece piece = gameLogic.getBoard().getPiece(index);
 
-            if (piece !=null && !piece.isEmpty()) {
-                Color pieceColor =
-                        piece.isBlack()
-                                ? Color.BLACK //again we can have variables for colors
-                                : Color.FIREBRICK;
+            if (piece != null && !piece.isEmpty()) {
+                Color pieceColor = piece.isBlack()
+                        ? Color.BLACK // again we can have variables for colors
+                        : Color.FIREBRICK;
 
-                Circle pieceCircle =
-                        createPiece(piece);
+                Circle pieceCircle = createPiece(piece);
 
                 square.getChildren().add(pieceCircle);
+            } else if (legalDestinations.contains(index)) {
+                // Shows a marker on an empty square where the piece can move.
+                Circle moveMarker = new Circle(9, Color.LIMEGREEN);
+                moveMarker.setOpacity(0.85);
+                square.getChildren().add(moveMarker);
             }
 
             final int finalIndex = index;
@@ -193,7 +200,7 @@ public class GameBoardController {
         } else if (piece.isRed()) {
             color = Color.FIREBRICK;
         } else {
-            return null; 
+            return null;
         }
 
         Circle circle = new Circle(23);
@@ -202,8 +209,7 @@ public class GameBoardController {
         circle.setStroke(Color.WHITE);
         circle.setStrokeWidth(2);
 
-
-        if(piece.isKing()) {
+        if (piece.isKing()) {
             circle.setStroke(Color.GOLD);
             circle.setStrokeWidth(4);
         }
@@ -212,75 +218,92 @@ public class GameBoardController {
     }
 
     private void handleSquareClick(int clickedIndex) {
+        // Do not allow more moves after the game has ended.
+        if (gameLogic.isGameOver()) {
+            showGameOverMessage();
+            return;
+        }
 
         if (selectedIndex == -1) {
 
-            
             if (onlineMode && !isLocalPlayersPiece(clickedIndex)) {
                 System.out.println("Cannot select opponent's piece. "
                         + "Online player: " + onlinePlayerNumber);
                 return;
             }
 
-
             if (gameLogic.isCurrentPlayerPiece(clickedIndex)) {
 
-                selectedIndex = clickedIndex;
+                // Gets every legal destination for the selected piece.
+                List<Integer> destinations = gameLogic.getLegalDestinations(clickedIndex);
 
-                gameStatus.setText(
-                        "Piece selected. Choose a destination."
-                );
+                if (destinations.isEmpty()) {
+                    // If any jump exists, the player must select a piece that can jump.
+                    gameStatus.setText(
+                            gameLogic.hasAnyJump(gameLogic.getCurrentPlayer())
+                                    ? "A jump is available. Select a piece that can jump."
+                                    : "That piece has no legal moves.");
+                } else {
+                    selectedIndex = clickedIndex;
+                    legalDestinations = destinations;
+                    gameStatus.setText("Choose a highlighted destination.");
+                    refreshBoard();
+                }
 
             } else {
 
                 gameStatus.setText(
-                        "Select one of your pieces."
-                );
+                        "Select one of your pieces.");
             }
 
             return;
         }
 
-        
         if (selectedIndex != -1 && selectedIndex != clickedIndex) {
-            
+
             if (onlineMode) {
+                // Converts the playable-square indexes into board rows and columns.
                 int fromRow = Board.getRow(selectedIndex);
                 int fromCol = Board.getCol(selectedIndex);
                 int toRow = Board.getRow(clickedIndex);
                 int toCol = Board.getCol(clickedIndex);
 
                 System.out.println(
-                    "Destination selected: from=" + selectedIndex
-                        + ", to=" + clickedIndex
-                        + ", player=" + onlinePlayerNumber
-                        + ", awaitingServerMove=" + awaitingServerMove
-                );
+                        "Destination selected: from=" + selectedIndex
+                                + ", to=" + clickedIndex
+                                + ", player=" + onlinePlayerNumber
+                                + ", awaitingServerMove=" + awaitingServerMove);
 
                 requestMove(fromRow, fromCol, toRow, toCol);
                 return;
             }
 
-
-            // Preserve existing local-game behavior.
             if (gameLogic.move(selectedIndex, clickedIndex)) {
-                selectedIndex = -1;
+                // Keeps the same piece selected when another jump is required.
+                updateSelectionAfterMove();
+
                 refreshBoard();
                 updateGameStatus();
+                showGameOverMessage();
+
             } else {
                 if (gameLogic.isCurrentPlayerPiece(clickedIndex)) {
 
-                    selectedIndex = clickedIndex;
+                    // Allows the player to select a different movable piece.
+                    List<Integer> destinations = gameLogic.getLegalDestinations(clickedIndex);
 
-                    gameStatus.setText(
-                            "Piece selected. Choose a destination."
-                    );
+                    if (!destinations.isEmpty()) {
+                        selectedIndex = clickedIndex;
+                        legalDestinations = destinations;
+                        gameStatus.setText("Choose a highlighted destination.");
+                        refreshBoard();
+                    } else {
+                        gameStatus.setText("That piece has no legal moves.");
+                    }
 
                 } else {
-
                     gameStatus.setText(
-                            "Invalid move. Try again."
-                    );
+                            "Invalid move. Try again.");
                 }
             }
 
@@ -300,24 +323,53 @@ public class GameBoardController {
         root.setCenter(board);
     }
 
-    private void updateGameStatus() {
-
-        if (gameLogic.getCurrentPlayer()
-                == GameLogic.red_player) {
-
-            gameStatus.setText(
-                    "Red player's turn"
-            );
-
+    // Keeps the jumping piece selected until every required jump is complete.
+    private void updateSelectionAfterMove() {
+        if (gameLogic.isMultiJumpInProgress()) {
+            selectedIndex = gameLogic.getForcedJumpIndex();
+            legalDestinations = gameLogic.getLegalDestinations(selectedIndex);
         } else {
-
-            gameStatus.setText(
-                    "Black player's turn"
-            );
+            selectedIndex = -1;
+            legalDestinations = Collections.emptyList();
         }
     }
 
-        
+    private void updateGameStatus() {
+        // Shows the final result when the game ends.
+        if (gameLogic.isGameOver()) {
+            gameStatus.setText(gameLogic.getGameResultMessage());
+            return;
+        }
+
+        // The same player must continue when another jump is available.
+        if (gameLogic.isMultiJumpInProgress()) {
+            gameStatus.setText(
+                    "Jump again with the highlighted piece.");
+            return;
+        }
+
+        if (gameLogic.getCurrentPlayer() == GameLogic.red_player) {
+            gameStatus.setText("Red player's turn");
+        } else {
+            gameStatus.setText("Black player's turn");
+        }
+    }
+
+    // Displays the final result only once when the game ends.
+    private void showGameOverMessage() {
+        if (!gameLogic.isGameOver() || gameOverMessageShown) {
+            return;
+        }
+
+        gameOverMessageShown = true;
+
+        Alert alert = new Alert(Alert.AlertType.INFORMATION);
+        alert.setTitle("Game Over");
+        alert.setHeaderText(gameLogic.getGameResultMessage());
+        alert.setContentText("Select New Game to play again.");
+        alert.show();
+    }
+
     public void configureOnlineGame(
             String gameId,
             int playerNumber,
@@ -329,8 +381,6 @@ public class GameBoardController {
         this.webSocketClient = client;
     }
 
-
-    
     private boolean isLocalPlayersPiece(int index) {
         Piece piece = gameLogic.getBoard().getPiece(index);
 
@@ -347,37 +397,34 @@ public class GameBoardController {
         return false;
     }
 
-    
     private int messagePlayerFromOuter(JsonNode outerMessage, int fallback) {
         return outerMessage.path("player").asInt(fallback);
     }
 
-    
-    
     public void handleServerMessage(JsonNode message) {
         try {
             String type = message.path("type").asText("");
 
             // The server wraps the original MOVE message inside GAME_MESSAGE.
-                    
-        if ("GAME_MESSAGE".equals(type)) {
-            int senderPlayer = message.path("player").asInt(-1);
-            JsonNode payload = message.path("message");
 
-            if (payload.isTextual()) {
-                message = objectMapper.readTree(payload.asText());
-            } else if (payload.isObject()) {
-                message = payload;
-            } else {
-                System.err.println("GAME_MESSAGE has an invalid payload: "
-                        + payload);
-                return;
-            }
+            if ("GAME_MESSAGE".equals(type)) {
+                int senderPlayer = message.path("player").asInt(-1);
+                JsonNode payload = message.path("message");
 
-            if (message.isObject()) {
-                ((com.fasterxml.jackson.databind.node.ObjectNode) message)
-                        .put("player", senderPlayer);
-            }
+                if (payload.isTextual()) {
+                    message = objectMapper.readTree(payload.asText());
+                } else if (payload.isObject()) {
+                    message = payload;
+                } else {
+                    System.err.println("GAME_MESSAGE has an invalid payload: "
+                            + payload);
+                    return;
+                }
+
+                if (message.isObject()) {
+                    ((com.fasterxml.jackson.databind.node.ObjectNode) message)
+                            .put("player", senderPlayer);
+                }
 
                 type = message.path("type").asText("");
             }
@@ -415,8 +462,6 @@ public class GameBoardController {
         }
     }
 
-
-    
     private void handleOnlineMove(JsonNode message) {
         int movePlayer = message.path("player").asInt(-1);
 
@@ -485,13 +530,10 @@ public class GameBoardController {
         });
     }
 
-
     private boolean validCoordinate(int row, int col) {
         return row >= 0 && row < 8 && col >= 0 && col < 8;
     }
 
-
-    
     private void requestMove(
             int fromRow,
             int fromCol,
@@ -500,20 +542,21 @@ public class GameBoardController {
 
         if (!onlineMode) {
             // Keep your existing local-game move implementation here.
-            int start = fromRow * 8 + fromCol;
-            int end = toRow * 8 + toCol;
+            int start = Board.toIndex(fromRow, fromCol);
+            int end = Board.toIndex(toRow, toCol);
 
             boolean moved = gameLogic.move(start, end);
 
             if (moved) {
-                selectedIndex = -1;
+                updateSelectionAfterMove();
                 refreshBoard();
                 updateGameStatus();
+                showGameOverMessage();
             }
+
             return;
         }
 
-        
         if (awaitingServerMove) {
             System.out.println("Move not sent: waiting for server response.");
             return;
@@ -527,19 +570,18 @@ public class GameBoardController {
         awaitingServerMove = true;
 
         System.out.println(
-            "Sending online move: " + fromRow + "," + fromCol
-                + " -> " + toRow + "," + toCol
-        );
+                "Sending online move: " + fromRow + "," + fromCol
+                        + " -> " + toRow + "," + toCol);
 
         webSocketClient.sendMove(
-            onlineGameId,
-            fromRow,
-            fromCol,
-            toRow,
-            toCol
-        );
+                onlineGameId,
+                fromRow,
+                fromCol,
+                toRow,
+                toCol);
 
         selectedIndex = -1;
+        legalDestinations = Collections.emptyList();
         refreshBoard();
     }
 }

@@ -16,9 +16,8 @@ public class Board {
 
     // set the board to the starting position for a new game
     public void reset() {
-        for (int i = 0; i < playable_squares; i++) {
-            squares[i] = new Piece(Piece.empty);
-        }
+        clear();
+
         // set up the black pieces
         for (int i = 0; i < 12; i++) {
             squares[i] = new Piece(Piece.black);
@@ -28,6 +27,14 @@ public class Board {
             squares[i] = new Piece(Piece.red);
         }   
     }
+    // Removes all pieces from the board.
+    // This helps us create specific board situations for testing.
+    public void clear() {
+        for (int i = 0; i < playable_squares; i++) {
+            squares[i] = new Piece(Piece.empty);
+        }
+    }
+
 
     // get the piece at a playable square
     public Piece getPiece(int index) {
