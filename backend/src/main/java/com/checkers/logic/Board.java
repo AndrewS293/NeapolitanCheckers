@@ -1,11 +1,12 @@
 package com.checkers.logic;
 
+
 import com.checkers.logic.Piece;
 
 
 public class Board {
-    public static final int board_size = 8;
-    public static final int playable_squares = 32;
+    public static final int board_size = GameConfig.BOARD_SIZE;
+    public static final int playable_squares = GameConfig.PLAYABLE_SQUARES;
 
     private Piece[] squares;
 
@@ -86,7 +87,7 @@ public class Board {
         return (index % (board_size / 2)) * 2 + ((row + 1) % 2);
     }
 
-    // removes a piece from the board
+    //removes a piece from the board
     public void removePiece(int index) {
         if (!isValidIndex(index)) {
             return;

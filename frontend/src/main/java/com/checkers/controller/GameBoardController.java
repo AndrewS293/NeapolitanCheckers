@@ -4,6 +4,7 @@ import com.checkers.Main;
 import com.checkers.logic.Board;
 import com.checkers.logic.GameLogic;
 import com.checkers.logic.Piece;
+import com.checkers.logic.GameConfig;
 
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
@@ -37,8 +38,8 @@ public class GameBoardController {
     private final ObjectMapper objectMapper = new ObjectMapper();
 
 
-    private static final int BOARD_SIZE = 8;
-    private static final double SQUARE_SIZE = 65;
+    private static final int BOARD_SIZE = GameConfig.BOARD_SIZE;
+    private static final double SQUARE_SIZE = GameConfig.SQUARE_SIZE;
 
     private GameLogic gameLogic;
     private BorderPane root;
@@ -147,11 +148,11 @@ public class GameBoardController {
 
         if (darkSquare) {
             background.setFill(
-                    Color.SADDLEBROWN //we can make a variable here for board colors
+                    GameConfig.DARK_SQUARE_COLOR 
             );
         } else {
             background.setFill(
-                    Color.BISQUE
+                    GameConfig.LIGHT_SQUARE_COLOR
             );
         }
 
@@ -165,17 +166,15 @@ public class GameBoardController {
             if (piece !=null && !piece.isEmpty()) {
                 Color pieceColor =
                         piece.isBlack()
-                                ? Color.BLACK //again we can have variables for colors
-                                : Color.FIREBRICK;
+                                ? GameConfig.BLACK_PIECE_COLOR
+                                : GameConfig.RED_PIECE_COLOR;
 
-                Circle pieceCircle =
-                        createPiece(piece);
+        Circle pieceCircle = createPiece(piece);
 
-                square.getChildren().add(pieceCircle);
-            }
+        square.getChildren().add(pieceCircle);
+    }
 
-            final int finalIndex = index;
-
+    final int finalIndex = index;
             square.setOnMouseClicked(event -> {
                 handleSquareClick(finalIndex);
             });
@@ -189,9 +188,9 @@ public class GameBoardController {
         Color color;
 
         if (piece.isBlack()) {
-            color = Color.BLACK;
+            color = GameConfig.BLACK_PIECE_COLOR;
         } else if (piece.isRed()) {
-            color = Color.FIREBRICK;
+            color = GameConfig.RED_PIECE_COLOR;
         } else {
             return null; 
         }
@@ -199,12 +198,12 @@ public class GameBoardController {
         Circle circle = new Circle(23);
 
         circle.setFill(color);
-        circle.setStroke(Color.WHITE);
+        circle.setStroke(GameConfig.PIECE_OUTLINE_COLOR);
         circle.setStrokeWidth(2);
 
 
         if(piece.isKing()) {
-            circle.setStroke(Color.GOLD);
+            circle.setStroke(GameConfig.KING_PIECE_OUTLINE_COLOR);
             circle.setStrokeWidth(4);
         }
 
