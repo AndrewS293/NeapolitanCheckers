@@ -8,7 +8,7 @@ public class GameConfig {
     
     // Board Size, Square Size, and Playable Squares
     public static final int BOARD_SIZE = 8;
-    public static final int PLAYABLE_SQUARES = 32;
+    public static final int PLAYABLE_SQUARES = 64;
     public static final double SQUARE_SIZE = 65;
 
     // Board Color 

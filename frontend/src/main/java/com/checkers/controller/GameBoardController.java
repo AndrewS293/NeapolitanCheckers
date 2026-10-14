@@ -159,7 +159,7 @@ public class GameBoardController {
             // Gold marks the selected piece. Green marks legal destinations.
             if (index == selectedIndex) {
                 background.setStroke(Color.GOLD);
-                background.setStrokeWidth(4);
+                background.setStrokeWidth(3);
             } else if (legalDestinations.contains(index)) {
                 background.setFill(Color.DARKSEAGREEN);
                 background.setStroke(Color.LIMEGREEN);
