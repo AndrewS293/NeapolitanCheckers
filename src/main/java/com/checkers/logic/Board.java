@@ -1,5 +1,6 @@
 package main.java.com.checkers.logic;
 
+// Represents the game board for the checkers game, including the playable squares and methods to manipulate and query the board.
 public class Board {
     public static final int board_size = 8;
     public static final int playable_squares = 32;

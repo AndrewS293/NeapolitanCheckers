@@ -14,6 +14,7 @@ import java.util.Map;
 
 @RestController
 @RequestMapping("/api/auth")
+// implements authcontroller component of application
 public class AuthController {
 
     private final UserService userService;
@@ -23,6 +24,7 @@ public class AuthController {
     }
 
    @PostMapping("/register")
+   // submits registration request and displays success or error feedback
     public ResponseEntity<?> register(
             @RequestBody RegisterRequest request) {
 
@@ -48,6 +50,7 @@ public class AuthController {
     }
 
     @PostMapping("/login")
+    // submits login request and displays success or error feedback
     public ResponseEntity<UserResponse> login(
             @RequestBody LoginRequest request,
             HttpSession session) {
@@ -64,6 +67,7 @@ public class AuthController {
     }
 
     @PostMapping("/logout")
+    // submits logout request and invalidates the session
     public ResponseEntity<Void> logout(HttpSession session) {
 
         session.invalidate();
@@ -72,6 +76,7 @@ public class AuthController {
     }
     
     @GetMapping("/me")
+    // retrieves the current user's information from the session
     public ResponseEntity<UserResponse> me(HttpSession session) {
 
         Long userId = (Long) session.getAttribute("userId");

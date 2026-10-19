@@ -16,6 +16,8 @@ import javafx.scene.layout.VBox;
 import javafx.scene.layout.HBox;
 import javafx.stage.Stage;
 
+// main application class for the Neapolitan Checkers game UI
+// Handles the creation and layout of the game's user interface using JavaFX
 public class GameApp extends Application {
 
     private static final double BASE_WIDTH = 1920;
@@ -39,11 +41,15 @@ public class GameApp extends Application {
 
     @Override
     public void start(Stage primaryStage) {
+        // saves primary stage reference for later use
+        // This allows the window to be accessed and modified throughout the application lifecycle
         window = primaryStage;
         window.setTitle("Neapolitan Checkers");
 
         buildUi();
 
+        // Creates the scene with the game UI and sets its initial size to half of the base resolution
+        // This helps in scaling the UI appropriately based on the window size
         scene = new Scene(gameUI, BASE_WIDTH / 2, BASE_HEIGHT / 2);
         scaleGroup.scaleXProperty().bind(
             Bindings.createDoubleBinding(() -> {
@@ -58,13 +64,16 @@ public class GameApp extends Application {
             settings.setFullscreen(newVal);
             refreshOptionsControls();
         });
-
+        // Sets the scene for the primary stage and applies the saved window settings
         window.setScene(scene);
         window.setWidth(settings.getWidth());
         window.setHeight(settings.getHeight());
         window.show();
     }
 
+    // Builds the user interface for the game, including the main menu and options menu
+    // This method initializes the game UI, creates the layout for the main menu and options menu,
+    // and adds them to the content root within the scale group.
     private void buildUi() {
         gameUI = new StackPane();
         gameUI.setStyle("-fx-background-color: black;");
@@ -88,6 +97,8 @@ public class GameApp extends Application {
         gameUI.getChildren().add(scaleGroup);
     }
 
+    // Creates the layout for the main menu, including the title, play, options, and exit buttons
+    // Returns a VBox containing the main menu elements
     private VBox createMenuLayout() {
         Label titleLabel = new Label("Neapolitan Checkers");
         titleLabel.setStyle("-fx-font-size: 80px; -fx-text-fill: white; -fx-font-weight: bold; -fx-font-family: 'Arial';");
@@ -121,6 +132,8 @@ public class GameApp extends Application {
         return layout;
     }
 
+    // Creates the layout for the options menu, including the title, resolution label, and other option controls
+    // Returns a VBox containing the options menu elements
     private VBox createOptionsLayout() {
         Label titleLabel = new Label("Options");
         titleLabel.setStyle("-fx-font-size: 68px; -fx-text-fill: white; -fx-font-weight: bold;");
@@ -188,6 +201,10 @@ public class GameApp extends Application {
         return layout;
     }
 
+    // Refreshes the options controls to reflect the current settings
+    // This ensures that the UI elements (resolution combo box, fullscreen checkbox, sound toggle, volume slider)
+    // are updated to match the current values stored in the settings object.
+    // This method is typically called before showing the options screen to ensure the UI is in sync with the settings.
     private void refreshOptionsControls() {
         if (resolutionComboBox != null) {
             resolutionComboBox.setValue(settings.getResolution());
@@ -206,17 +223,24 @@ public class GameApp extends Application {
         }
     }
 
+    // Shows the main menu screen, hiding the options and game screens
+    // This is typically called when the user selects "Play" from the main menu or presses ESC from the game screen.
     private void showMenuScreen() {
         menuLayout.setVisible(true);
         optionsLayout.setVisible(false);
     }
 
+    // Shows the options screen, hiding the main menu and game screens
+    // This is typically called when the user selects "Options" from the main menu.
     private void showOptionsScreen() {
         refreshOptionsControls();
         menuLayout.setVisible(false);
         optionsLayout.setVisible(true);
     }
 
+    // Shows the game screen, hiding the main menu and options screens
+    // This is typically called when the user selects "Play" from the main menu.
+    // The game screen contains a placeholder label and handles the ESC key to return to the main menu.
     private void showGameScreen() {
         Label gameTitle = new Label("Game Running... (Press ESC to return to menu)");
         gameTitle.setStyle("-fx-font-size: 42px; -fx-text-fill: white;");
@@ -239,6 +263,9 @@ public class GameApp extends Application {
         ((StackPane) scaleGroup.getChildren().get(0)).getChildren().add(gameScreen);
     }
 
+    // Applies the selected settings from the options screen to the game window and internal settings object.
+    // This includes setting the resolution, fullscreen mode, sound, and volume.
+    // The method is typically called after the user changes settings in the options screen.
     private void applySelectedSettings() {
         if (resolutionComboBox != null && resolutionComboBox.getValue() != null) {
             settings.setResolution(resolutionComboBox.getValue());
@@ -256,6 +283,8 @@ public class GameApp extends Application {
         }
     }
 
+    // Entry point for the game application
+    // Launches the JavaFX application with the given arguments.
     public static void main(String[] args) {
         launch(args);
     }

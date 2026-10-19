@@ -8,6 +8,8 @@ import org.springframework.web.socket.handler.TextWebSocketHandler;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
 @Component
+// WebSocket handler for managing game connections and messages
+
 public class GameWebSocketHandler extends TextWebSocketHandler {
 
     private final GameSessionManager sessionManager;
@@ -19,7 +21,9 @@ public class GameWebSocketHandler extends TextWebSocketHandler {
         this.objectMapper = new ObjectMapper();
     }
 
-
+// Sends a message to a specific WebSocket session
+// Does nothing if the session is null or not open
+// Logs an error if sending the message fails
     private void sendMessage(
             WebSocketSession session,
             WebSocketMessage message) {
@@ -41,7 +45,9 @@ public class GameWebSocketHandler extends TextWebSocketHandler {
             );
         }
     }
-
+// Broadcasts a message to all players in a specific game room
+// Does nothing if the game room does not exist
+// Logs an error if creating the WebSocket message fails
     private void broadcast(
             String gameId,
             String type,
@@ -84,6 +90,12 @@ public class GameWebSocketHandler extends TextWebSocketHandler {
     }
 
     @Override
+    // Handles the event when a WebSocket connection is established
+    // Adds the session to the session manager
+    // Retrieves the game ID and username from the session attributes
+    // Sends an error message and closes the session if the username or game ID is missing
+    // Sends an error message and closes the session if the game room does not exist
+    // Attempts to join the player to the game room and sends an error message if joining fails
     public void afterConnectionEstablished(WebSocketSession session) throws Exception {
 
         sessionManager.addSession(session);
@@ -201,6 +213,13 @@ public class GameWebSocketHandler extends TextWebSocketHandler {
     }
 
     @Override
+    // Handles the event when a text message is received from a WebSocket session
+    // Retrieves the game ID from the session attributes
+    // Returns if the game ID is missing
+    // Retrieves the game room from the session manager
+    // Returns if the game room does not exist
+    // Logs the received message
+    // Broadcasts the message to all players in the game room
     protected void handleTextMessage(
             WebSocketSession session,
             TextMessage message) {
@@ -235,6 +254,12 @@ public class GameWebSocketHandler extends TextWebSocketHandler {
     }
 
    @Override
+    // Handles the event when a WebSocket connection is closed
+    // Retrieves the game ID from the session attributes
+    // Returns if the game ID is missing
+    // Retrieves the game room from the session manager
+    // Returns if the game room does not exist
+   
 public void afterConnectionClosed(
         WebSocketSession session,
         CloseStatus status) {
@@ -297,7 +322,7 @@ public void afterConnectionClosed(
             );
         }
     }
-
+    // Retrieves the player number of a session within a game room
     private int getPlayerNumber(
             GameRoom room,
             WebSocketSession session) {
@@ -319,6 +344,7 @@ public void afterConnectionClosed(
         return 0;
     }
 
+    // Retrieves the game ID from the WebSocket session's URI query parameters
     private String getGameId(WebSocketSession session) {
 
         if (session.getUri() == null) {

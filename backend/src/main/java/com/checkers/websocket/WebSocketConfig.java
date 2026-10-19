@@ -8,6 +8,7 @@ import org.springframework.web.socket.server.support.HttpSessionHandshakeInterce
 
 @Configuration
 @EnableWebSocket
+// Configuration class for setting up WebSocket handlers in the application
 public class WebSocketConfig implements WebSocketConfigurer {
 
     private final GameWebSocketHandler gameWebSocketHandler;
@@ -20,6 +21,7 @@ public class WebSocketConfig implements WebSocketConfigurer {
     }
 
     @Override
+    // Registers the WebSocket handlers with the registry
     public void registerWebSocketHandlers(
             WebSocketHandlerRegistry registry) {
 

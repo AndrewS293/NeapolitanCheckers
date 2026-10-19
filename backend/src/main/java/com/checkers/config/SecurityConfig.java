@@ -12,9 +12,11 @@ import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 import java.util.List;
 
 @Configuration
+// implements securityconfig component of application
 public class SecurityConfig {
 
     @Bean
+
     public org.springframework.security.web.SecurityFilterChain securityFilterChain(
             HttpSecurity http) throws Exception {
 
@@ -31,11 +33,13 @@ public class SecurityConfig {
     }
 
     @Bean
+    // defines passwordencoder for application
     public PasswordEncoder passwordEncoder() {
         return new BCryptPasswordEncoder();
     }
 
     @Bean
+    // defines cors configuration source for application
     public CorsConfigurationSource corsConfigurationSource() {
 
         CorsConfiguration configuration =

@@ -1,5 +1,6 @@
 package main.java.com.checkers.logic;
 
+// Represents the game logic for the checkers game, including managing the current player, handling moves, and promoting pieces to kings.
 public class GameLogic {
     public static final int red_player = Piece.red;
     public static final int black_player = Piece.black;

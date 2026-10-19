@@ -7,6 +7,7 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
 @Service
+// implements user service for the application
 public class UserService {
 
     private final UserRepository userRepository;
@@ -19,9 +20,11 @@ public class UserService {
         this.userRepository = userRepository;
         this.passwordEncoder = passwordEncoder;
     }
-
+    // register a new user with the provided registration request
+    // throws IllegalArgumentException if any validation fails
+    // returns the saved user entity if registration is successful
     public User register(RegisterRequest request) {
-       
+        // validate the username
         if (request.getUsername().isBlank()) {
         throw new IllegalArgumentException("Username is required");
         }
@@ -72,6 +75,9 @@ public class UserService {
         return userRepository.save(user);
     }
 
+    // authenticate a user with the provided username and password
+    // throws IllegalArgumentException if the username or password is invalid
+    // returns the user entity if authentication is successful
     public User login(String username, String password) {
 
         User user = userRepository.findByUsername(username)
@@ -85,6 +91,9 @@ public class UserService {
         return user;
     }
 
+    // find a user by their ID
+    // throws IllegalArgumentException if the user is not found
+    // returns the user entity if found
     public User findById(Long id) {
 
         return userRepository.findById(id)

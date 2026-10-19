@@ -4,6 +4,7 @@ import com.checkers.model.User;
 
 import java.time.LocalDateTime;
 
+// implements user response data transfer object for the application
 public class UserResponse {
 
     private Long id;
@@ -20,22 +21,27 @@ public class UserResponse {
         this.lastLogin = user.getLastLogin();
     }
 
+    // return the ID of the user response
     public Long getId() {
         return id;
     }
 
+    // return the username of the user response
     public String getUsername() {
         return username;
     }
 
+    // return the email of the user response
     public String getEmail() {
         return email;
     }
 
+    // return the creation date of the user response
     public LocalDateTime getCreatedAt() {
         return createdAt;
     }
 
+    // return the last login date of the user response
     public LocalDateTime getLastLogin() {
         return lastLogin;
     }

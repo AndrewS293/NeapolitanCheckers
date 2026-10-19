@@ -5,8 +5,9 @@ import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
 
+// implements movedao component of application
 public class MoveDAO {
-
+// defines the method to save a move to the database
     public static void saveMove(
             long gameId,
             long playerId,

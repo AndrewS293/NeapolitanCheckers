@@ -16,6 +16,7 @@ import java.util.stream.Collectors;
 
 @RestController
 @RequestMapping("/api/games")
+// implements gamecontroller component of application
 public class GameController {
 
     private final GameSessionManager sessionManager;
@@ -25,6 +26,7 @@ public class GameController {
     }
 
     @PostMapping
+    // creates a new game with the specified visibility
     public ResponseEntity<?> createGame(@RequestParam GameVisibility visibility) {
 
         String gameId = UUID.randomUUID()
@@ -64,6 +66,7 @@ public class GameController {
     }
 
     @GetMapping("/open")
+    // retrieves a list of open public games
     public ResponseEntity<?> getOpenGames() {
 
         List<Map<String, Object>> games = sessionManager
@@ -79,6 +82,7 @@ public class GameController {
     }
 
     @PostMapping("/{gameId}/join")
+    // joins a public game by its game ID
     public ResponseEntity<?> joinPublicGame(@PathVariable String gameId) {
 
         GameRoom room = sessionManager.getRoom(gameId);
@@ -111,6 +115,7 @@ public class GameController {
     }
 
     @PostMapping ("/join/{joinCode}")
+    // joins a private game by its join code
     public ResponseEntity<?> joinPrivateGame(@PathVariable String joinCode) {
 
         GameRoom room = sessionManager.getRoomByJoinCode(joinCode);
@@ -137,6 +142,7 @@ public class GameController {
     }
 
     @GetMapping("/{gameId}")
+    // retrieves a game by its game ID
     public ResponseEntity<?> getGame(@PathVariable String gameId) {
 
         GameRoom room = sessionManager.getRoom(gameId);
@@ -156,7 +162,8 @@ public class GameController {
         );
     }
     @GetMapping("/test-move")
-public String testMove() {
+    // tests sending a move to the database
+    public String testMove() {
 
     MoveDAO.saveMove(
         1,

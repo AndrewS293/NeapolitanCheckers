@@ -9,12 +9,17 @@ import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 
 @Component
+// Manages WebSocket sessions and game rooms for the checkers game
+// Provides methods to add and remove sessions, create and retrieve game rooms,
+// handle player joins and leaves, and send messages to players within a game room.
 public class GameSessionManager {
 
     private final Map<String, WebSocketSession> sessions = new ConcurrentHashMap<>();
 
     private final Map<String, GameRoom> rooms = new ConcurrentHashMap<>();
 
+    // add a WebSocket session to the manager
+    // stores the session in the sessions map using its ID as the key
     public void addSession(WebSocketSession session) {
         sessions.put(session.getId(), session);
 
@@ -27,6 +32,8 @@ public class GameSessionManager {
         );
     }
 
+    // remove a WebSocket session from the manager
+    // removes the session from the sessions map using its ID as the key
     public void removeSession(WebSocketSession session) {
         sessions.remove(session.getId());
 
@@ -40,6 +47,8 @@ public class GameSessionManager {
     }
 
 
+    // create a new game room
+    // stores the room in the rooms map using its game ID as the key
     public GameRoom createRoom(String gameId, GameVisibility visibility, String joinCode) {
         GameRoom room = new GameRoom(gameId, visibility, joinCode);
         rooms.put(gameId, room);
@@ -51,11 +60,15 @@ public class GameSessionManager {
         return room;
     }
 
+    // get a game room by its game ID
+    // returns the game room if found, null otherwise
     public GameRoom getRoom(String gameId) {
         return rooms.get(gameId);
     }
 
 
+    // get a game room by its join code
+    // returns the game room if found, null otherwise
     public GameRoom getRoomByJoinCode(String joinCode) {
         for (GameRoom room : rooms.values()) {
             if (room.getJoinCode().equals(joinCode)) {
@@ -65,6 +78,8 @@ public class GameSessionManager {
         return null;
     }
 
+    // get all open public games
+    // returns a list of game rooms that are public, waiting, and not full
     public List<GameRoom> getOpenPublicGames() {
         List<GameRoom> openPublicGames = new ArrayList<>();
 
@@ -77,6 +92,8 @@ public class GameSessionManager {
         return openPublicGames;
     }
 
+    // allow a player to join a game room
+    // returns true if the player successfully joined, false otherwise
     public boolean joinRoom(String gameId, WebSocketSession session, String username) {
         GameRoom room = rooms.get(gameId);
         
@@ -101,6 +118,8 @@ public class GameSessionManager {
         return added;
     }
 
+    // allow a player to leave a game room
+    // removes the player from the game room and updates the room status
     public void removePlayerFromGame(
         String gameId,
         WebSocketSession session) {
@@ -133,6 +152,8 @@ public class GameSessionManager {
         }
     }
 
+    // send a message to all players in a game room
+    // does nothing if the game room does not exist
     public void sendToGame(String gameId, String message){
 
         GameRoom room = rooms.get(gameId);
@@ -145,6 +166,8 @@ public class GameSessionManager {
         sendToPlayer(room.getPlayer2(), message);
     }
 
+    // send a message to a specific player
+    // does nothing if the session is null or not open
     private void sendToPlayer(WebSocketSession session, String message) {
 
         if(session == null || !session.isOpen()) {
@@ -161,10 +184,14 @@ public class GameSessionManager {
         }
     }
 
+    // get the total number of active WebSocket connections
+    // returns the number of connections as an integer
     public int getConnectionCount() {
         return sessions.size();
     }
 
+    // get the total number of game rooms
+    // returns the number of game rooms as an integer
     public int getRoomCount() {
         return rooms.size();
     }
