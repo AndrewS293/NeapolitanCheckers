@@ -7,6 +7,7 @@ import java.net.http.HttpResponse;
 
 public class GameDAO {
 
+        //Creates game within our Supabase PostgreSQL database and returns the game id
     public static long createGame(String roomCode) {
 
         try {

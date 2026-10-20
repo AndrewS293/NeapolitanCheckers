@@ -17,7 +17,7 @@ public class GameConfig {
 
     // Checker Piece Color 
     public static final Color BLACK_PIECE_COLOR = Color.BLACK;
-    public static final Color RED_PIECE_COLOR = Color.FIREBRICK;
+    public static final Color RED_PIECE_COLOR = Color.RED;
     
     // Checker Piece Outline Col
     public static final Color PIECE_OUTLINE_COLOR = Color.WHITE;

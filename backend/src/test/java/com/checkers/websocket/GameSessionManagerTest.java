@@ -23,8 +23,12 @@ class GameSessionManagerTest {
         p2 = mock(WebSocketSession.class);
         when(p1.getId()).thenReturn("p1");
         when(p2.getId()).thenReturn("p2");
+        when(p1.isOpen()).thenReturn(true);
+        when(p2.isOpen()).thenReturn(true);
     }
 
+
+    //extra tests for connections/games
     @Test
     void createRoom_StoresRoomAndReturnsIt() {
         GameRoom room = manager.createRoom("ABC123", 10L, GameVisibility.PUBLIC, null);
@@ -86,13 +90,22 @@ class GameSessionManagerTest {
     }
 
     @Test
-    void removePlayerFromGame_RemovesPlayerAndDeletesEmptyRoom() {
+    void removePlayerFromGame_ReservesEmptyRoomForReconnect() {
         manager.createRoom("GAME1", 1L, GameVisibility.PUBLIC, null);
         manager.joinRoom("GAME1", p1, "alice");
 
         manager.removePlayerFromGame("GAME1", p1);
 
-        assertNull(manager.getRoom("GAME1"));
+        GameRoom room = manager.getRoom("GAME1");
+        assertNotNull(room);
+        assertEquals(0, room.getPlayerCount());
+        assertEquals("alice", room.getPlayer1Username());
+
+        WebSocketSession reconnect = mock(WebSocketSession.class);
+        when(reconnect.getId()).thenReturn("p1-reconnected");
+        when(reconnect.isOpen()).thenReturn(true);
+        assertTrue(manager.joinRoom("GAME1", reconnect, "alice"));
+        assertEquals(1, room.getPlayerCount());
     }
 
     @Test

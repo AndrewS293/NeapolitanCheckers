@@ -11,6 +11,8 @@ import java.net.http.WebSocket;
 import java.util.concurrent.CompletionStage;
 import java.util.function.Consumer;
 
+//manages the websocket connection to the backend for each game
+
 public class GameWebSocketClient implements WebSocket.Listener {
 
     private static final String WS_URL =

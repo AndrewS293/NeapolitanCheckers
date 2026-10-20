@@ -7,9 +7,28 @@ import org.springframework.web.socket.WebSocketSession;
 import java.io.IOException;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.ScheduledFuture;
+import java.util.concurrent.TimeUnit;
 
 @Component
 public class GameSessionManager {
+    private static final long RECONNECT_TIMEOUT_SECONDS = 60;
+
+    private final ScheduledExecutorService timeoutExecutor =
+            Executors.newSingleThreadScheduledExecutor(runnable -> {
+                Thread thread = new Thread(runnable, "checkers-reconnect-timeouts");
+                thread.setDaemon(true);
+                return thread;
+            });
+
+    private final Map<String, ScheduledFuture<?>> reconnectTimeouts =
+            new ConcurrentHashMap<>();
+
+    private String timeoutKey(String gameId, int playerNumber) {
+        return gameId + ":" + playerNumber;
+    }
 
     private final Map<String, WebSocketSession> sessions =
             new ConcurrentHashMap<>();
@@ -107,9 +126,9 @@ public class GameSessionManager {
     }
 
     public boolean joinRoom(
-            String gameId,
-            WebSocketSession session,
-            String username) {
+        String gameId,
+        WebSocketSession session,
+        String username) {
 
         GameRoom room = rooms.get(gameId);
 
@@ -117,34 +136,25 @@ public class GameSessionManager {
             return false;
         }
 
-        if (room.isFull()) {
-            return false;
-        }
-
-        boolean added =
-                room.addPlayer(session, username);
+        boolean added = room.addPlayer(session, username);
 
         if (added) {
-
             System.out.println(
-                    "Client "
-                            + session.getId()
-                            + " joined room: "
-                            + gameId
+                    "Client " + session.getId()
+                            + " joined or reconnected to room: " + gameId
             );
         }
 
         System.out.println(
-                "Players in game: "
-                        + room.getPlayerCount()
+                "Connected players in game: " + room.getPlayerCount()
         );
 
         return added;
     }
 
     public void removePlayerFromGame(
-            String gameId,
-            WebSocketSession session) {
+        String gameId,
+        WebSocketSession session) {
 
         GameRoom room = rooms.get(gameId);
 
@@ -152,28 +162,74 @@ public class GameSessionManager {
             return;
         }
 
-        room.removePlayer(session);
+        int playerNumber = room.disconnectPlayer(session);
+
+        if (playerNumber == 0) {
+            return;
+        }
 
         System.out.println(
-                "Client "
-                        + session.getId()
-                        + " left game "
-                        + gameId
+                "Player " + playerNumber
+                        + " disconnected from game " + gameId
+                        + ". Their slot is reserved for "
+                        + RECONNECT_TIMEOUT_SECONDS + " seconds."
         );
 
-        System.out.println(
-                "Players in game: "
-                        + room.getPlayerCount()
-        );
+        String key = timeoutKey(gameId, playerNumber);
 
-        if (room.isEmpty()) {
+        ScheduledFuture<?> timeout = timeoutExecutor.schedule(() -> {
+            GameRoom currentRoom = rooms.get(gameId);
 
-            rooms.remove(gameId);
+            if (currentRoom == null) {
+                return;
+            }
+
+            synchronized (currentRoom) {
+                // A successful reconnect or a finished game cancels the timeout.
+                if (currentRoom.getStatus() == GameRoom.Status.FINISHED
+                        || currentRoom.isPlayerConnected(playerNumber)) {
+                    reconnectTimeouts.remove(key);
+                    return;
+                }
+
+                currentRoom.finish();
+            }
+
+            reconnectTimeouts.remove(key);
+
+            String message = "{\"type\":\"RECONNECT_TIMEOUT\","
+                    + "\"gameId\":\"" + gameId + "\","
+                    + "\"player\":" + playerNumber + ","
+                    + "\"status\":\"FINISHED\","
+                    + "\"message\":\"The disconnected player's reconnection "
+                    + "time expired. The match has ended.\"}";
+
+            sendToGame(gameId, message);
 
             System.out.println(
-                    "Removed empty game room: "
-                            + gameId
+                    "Reconnect timeout expired for player "
+                            + playerNumber + " in game " + gameId
             );
+
+        }, RECONNECT_TIMEOUT_SECONDS, TimeUnit.SECONDS);
+
+        ScheduledFuture<?> previous = reconnectTimeouts.put(key, timeout);
+
+        if (previous != null) {
+            previous.cancel(false);
+        }
+    }
+
+    public void cancelReconnectTimeout(
+        String gameId,
+        int playerNumber) {
+
+        String key = timeoutKey(gameId, playerNumber);
+
+        ScheduledFuture<?> timeout = reconnectTimeouts.remove(key);
+
+        if (timeout != null) {
+            timeout.cancel(false);
         }
     }
 

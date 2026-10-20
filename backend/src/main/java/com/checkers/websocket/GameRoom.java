@@ -1,3 +1,4 @@
+
 package com.checkers.websocket;
 
 import org.springframework.web.socket.WebSocketSession;
@@ -10,30 +11,29 @@ public class GameRoom {
         ACTIVE,
         FINISHED
     }
-    //Our gameID that identifies the game room
-    private final String gameId;
-    //The ID that goes in our database 
-    private final long databaseGameId;
 
-    private final GameVisibility visibility; //PUBLIC or PRIVATE
+    private final String gameId;
+    private final long databaseGameId;
+    private final GameVisibility visibility;
     private final String joinCode;
 
     private WebSocketSession player1;
     private WebSocketSession player2;
 
+    // Keep usernames reserved during temporary disconnections.
     private String player1Username;
     private String player2Username;
 
     private Status status = Status.WAITING;
 
-    private GameLogic gameLogic = new GameLogic();
+    // Each room keeps its own board and turn state.
+    private final GameLogic gameLogic = new GameLogic();
 
     public GameRoom(
             String gameId,
             long databaseGameId,
             GameVisibility visibility,
             String joinCode) {
-
         this.gameId = gameId;
         this.databaseGameId = databaseGameId;
         this.visibility = visibility;
@@ -56,35 +56,71 @@ public class GameRoom {
         return joinCode;
     }
 
-    public WebSocketSession getPlayer1() {
+    public synchronized WebSocketSession getPlayer1() {
         return player1;
     }
 
-    public WebSocketSession getPlayer2() {
+    public synchronized WebSocketSession getPlayer2() {
         return player2;
     }
 
-    public Status getStatus() {
+    public synchronized Status getStatus() {
         return status;
     }
 
+    public synchronized GameLogic getGameLogic() {
+        return gameLogic;
+    }
 
-    public boolean addPlayer(
+    public synchronized String getPlayer1Username() {
+        return player1Username;
+    }
+
+    public synchronized String getPlayer2Username() {
+        return player2Username;
+    }
+
+    public synchronized boolean addPlayer(
             WebSocketSession session,
             String username) {
 
-        if (status == Status.FINISHED) {
+        if (status == Status.FINISHED
+                || session == null
+                || username == null) {
             return false;
         }
 
-        if (player1 == null) {
+        // Reclaim the original player 1 slot.
+        if (username.equals(player1Username)) {
+            if (player1 != null) {
+                return false;
+            }
+
+            player1 = session;
+            updateStatus();
+            return true;
+        }
+
+        // Reclaim the original player 2 slot.
+        if (username.equals(player2Username)) {
+            if (player2 != null) {
+                return false;
+            }
+
+            player2 = session;
+            updateStatus();
+            return true;
+        }
+
+        // Assign a genuinely unreserved slot.
+        if (player1Username == null) {
             player1 = session;
             player1Username = username;
             updateStatus();
             return true;
         }
 
-        if (player2 == null) {
+        if (player2Username == null) {
             player2 = session;
             player2Username = username;
             updateStatus();
@@ -94,70 +130,142 @@ public class GameRoom {
         return false;
     }
 
-    public void removePlayer(WebSocketSession session) {
+    /**
+     * Disconnect the session without releasing its player slot.
+     */
+    public synchronized int disconnectPlayer(
+            WebSocketSession session) {
 
-        if (player1 != null &&
-                player1.getId().equals(session.getId())) {
+        if (session == null) {
+            return 0;
+        }
 
+        if (player1 != null
+                && player1.getId().equals(session.getId())) {
             player1 = null;
-            player1Username = null;
+            updateStatus();
+            return 1;
         }
 
-        if (player2 != null &&
-                player2.getId().equals(session.getId())) {
-
+        if (player2 != null
+                && player2.getId().equals(session.getId())) {
             player2 = null;
-            player2Username = null;
+            updateStatus();
+            return 2;
         }
 
-        updateStatus();
+        return 0;
     }
 
-    private void updateStatus() {
+    public synchronized boolean hasDisconnectedPlayer(
+            String username) {
 
-        if (player1 != null && player2 != null) {
-            status = Status.ACTIVE;
-        } else {
-            status = Status.WAITING;
+        return username != null
+                && ((username.equals(player1Username)
+                        && player1 == null)
+                    || (username.equals(player2Username)
+                        && player2 == null));
+    }
+
+    public synchronized boolean isPlayerConnected(int playerNumber) {
+        if (playerNumber == 1) {
+            return player1 != null && player1.isOpen();
         }
+
+        if (playerNumber == 2) {
+            return player2 != null && player2.isOpen();
+        }
+
+        return false;
     }
 
-    public boolean isFull() {
+    public synchronized String getUsername(int playerNumber) {
+        if (playerNumber == 1) {
+            return player1Username;
+        }
 
-        return player1 != null &&
-                player2 != null;
+        if (playerNumber == 2) {
+            return player2Username;
+        }
+
+        return null;
     }
 
-    public boolean isEmpty() {
-
-        return player1 == null &&
-                player2 == null;
+    public synchronized boolean isFull() {
+        // A disconnected player's slot remains reserved.
+        return player1Username != null
+                && player2Username != null;
     }
 
-    public int getPlayerCount() {
+    public synchronized boolean isEmpty() {
+        return player1Username == null
+                && player2Username == null;
+    }
 
+    public synchronized int getPlayerCount() {
         int count = 0;
 
-        if (player1 != null) {
+        if (player1 != null && player1.isOpen()) {
             count++;
         }
 
-        if (player2 != null) {
+        if (player2 != null && player2.isOpen()) {
             count++;
         }
 
         return count;
     }
 
-    public String getPlayer1Username() {
-        return player1Username;
+    public synchronized int getPlayerNumber(
+            WebSocketSession session) {
+
+        if (session == null) {
+            return 0;
+        }
+
+        if (player1 != null
+                && player1.getId().equals(session.getId())) {
+            return 1;
+        }
+
+        if (player2 != null
+                && player2.getId().equals(session.getId())) {
+            return 2;
+        }
+
+        return 0;
     }
 
-    public String getPlayer2Username() {
-        return player2Username;
+    public synchronized int getPlayerNumberByUsername(
+            String username) {
+
+        if (username != null
+                && username.equals(player1Username)) {
+            return 1;
+        }
+
+        if (username != null
+                && username.equals(player2Username)) {
+            return 2;
+        }
+
+        return 0;
     }
 
-    public GameLogic getGameLogic() {
-        return gameLogic;
+    public synchronized void finish() {
+        status = Status.FINISHED;
+    }
+
+    private void updateStatus() {
+        if (status == Status.FINISHED) {
+            return;
+        }
+
+        if (player1 != null && player1.isOpen()
+                && player2 != null && player2.isOpen()) {
+            status = Status.ACTIVE;
+        } else {
+            status = Status.WAITING;
+        }
     }
 }

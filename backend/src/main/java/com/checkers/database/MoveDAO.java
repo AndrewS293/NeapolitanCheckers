@@ -7,6 +7,7 @@ import java.net.http.HttpResponse;
 
 public class MoveDAO {
 
+    //Saves a move within our Supabase PostgreSQL database
     public static void saveMove(
             long gameId,
             long playerId,
