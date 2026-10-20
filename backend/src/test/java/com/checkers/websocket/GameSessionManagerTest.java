@@ -48,8 +48,10 @@ class GameSessionManagerTest {
         assertEquals("GAME1", room.getGameId());
     }
 
+
+    //A.C. 5.1 Connect to open game
     @Test
-    void getOpenPublicGames_ReturnsOnlyOpenPublicWaitingRooms() {
+    void getOpenPublicGames() {
         GameRoom publicWaiting = manager.createRoom("A", 1L, GameVisibility.PUBLIC, null);
         GameRoom publicFull = manager.createRoom("B", 2L, GameVisibility.PUBLIC, null);
         GameRoom privateWaiting = manager.createRoom("C", 3L, GameVisibility.PRIVATE, "X");
@@ -67,6 +69,7 @@ class GameSessionManagerTest {
         assertFalse(openGames.contains(privateWaiting));
     }
 
+    //A.C. 5.1 Connect to open game
     @Test
     void joinRoom_Success_WhenRoomHasSpace() {
         manager.createRoom("GAME1", 1L, GameVisibility.PUBLIC, null);
