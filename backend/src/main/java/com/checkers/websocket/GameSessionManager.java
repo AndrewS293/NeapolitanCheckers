@@ -82,13 +82,6 @@ public class GameSessionManager {
                 joinCode
         );
 
-<<<<<<< HEAD
-    // create a new game room
-    // stores the room in the rooms map using its game ID as the key
-    public GameRoom createRoom(String gameId, GameVisibility visibility, String joinCode) {
-        GameRoom room = new GameRoom(gameId, visibility, joinCode);
-=======
->>>>>>> 3ab36ff44c66a7af0e16228bbfd08ce18faafa7b
         rooms.put(gameId, room);
 
         System.out.println(
@@ -109,12 +102,9 @@ public class GameSessionManager {
         return rooms.get(gameId);
     }
 
-<<<<<<< HEAD
 
     // get a game room by its join code
     // returns the game room if found, null otherwise
-=======
->>>>>>> 3ab36ff44c66a7af0e16228bbfd08ce18faafa7b
     public GameRoom getRoomByJoinCode(String joinCode) {
 
         for (GameRoom room : rooms.values()) {
@@ -149,17 +139,9 @@ public class GameSessionManager {
         return openPublicGames;
     }
 
-<<<<<<< HEAD
     // allow a player to join a game room
     // returns true if the player successfully joined, false otherwise
     public boolean joinRoom(String gameId, WebSocketSession session, String username) {
-=======
-    public boolean joinRoom(
-        String gameId,
-        WebSocketSession session,
-        String username) {
-
->>>>>>> 3ab36ff44c66a7af0e16228bbfd08ce18faafa7b
         GameRoom room = rooms.get(gameId);
 
         if (room == null) {
@@ -265,15 +247,10 @@ public class GameSessionManager {
         }
     }
 
-<<<<<<< HEAD
     // send a message to all players in a game room
     // does nothing if the game room does not exist
     public void sendToGame(String gameId, String message){
 
-=======
-    
-    public void sendToGame(String gameId, String message) {
->>>>>>> 3ab36ff44c66a7af0e16228bbfd08ce18faafa7b
         GameRoom room = rooms.get(gameId);
 
         if (room == null) {
@@ -298,15 +275,11 @@ public class GameSessionManager {
         sendToPlayer(player2, message);
     }
 
-<<<<<<< HEAD
     // send a message to a specific player
     // does nothing if the session is null or not open
-    private void sendToPlayer(WebSocketSession session, String message) {
-=======
     private void sendToPlayer(
             WebSocketSession session,
             String message) {
->>>>>>> 3ab36ff44c66a7af0e16228bbfd08ce18faafa7b
 
         if (session == null) {
             System.err.println("Broadcast skipped: session is null.");
@@ -338,12 +311,8 @@ public class GameSessionManager {
         }
     }
 
-<<<<<<< HEAD
     // get the total number of active WebSocket connections
     // returns the number of connections as an integer
-=======
-
->>>>>>> 3ab36ff44c66a7af0e16228bbfd08ce18faafa7b
     public int getConnectionCount() {
         return sessions.size();
     }

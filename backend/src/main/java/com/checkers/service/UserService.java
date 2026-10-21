@@ -24,13 +24,7 @@ public class UserService {
     // throws IllegalArgumentException if any validation fails
     // returns the saved user entity if registration is successful
     public User register(RegisterRequest request) {
-<<<<<<< HEAD
         // validate the username
-=======
-       
-
-        //all error messages for registration
->>>>>>> 3ab36ff44c66a7af0e16228bbfd08ce18faafa7b
         if (request.getUsername().isBlank()) {
         throw new IllegalArgumentException("Username is required");
         }
@@ -107,13 +101,9 @@ public class UserService {
         return userRepository.save(user);
     }
 
-<<<<<<< HEAD
     // authenticate a user with the provided username and password
     // throws IllegalArgumentException if the username or password is invalid
     // returns the user entity if authentication is successful
-    public User login(String username, String password) {
-=======
->>>>>>> 3ab36ff44c66a7af0e16228bbfd08ce18faafa7b
 
 
     public User login(String username, String password) {
@@ -129,13 +119,9 @@ public class UserService {
         return user;
     }
 
-<<<<<<< HEAD
     // find a user by their ID
     // throws IllegalArgumentException if the user is not found
     // returns the user entity if found
-=======
-    //searches for a user by their id, if not found throws an error
->>>>>>> 3ab36ff44c66a7af0e16228bbfd08ce18faafa7b
     public User findById(Long id) {
 
         return userRepository.findById(id)

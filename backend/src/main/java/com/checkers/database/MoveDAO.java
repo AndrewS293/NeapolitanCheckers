@@ -7,12 +7,7 @@ import java.net.http.HttpResponse;
 
 // implements movedao component of application
 public class MoveDAO {
-<<<<<<< HEAD
 // defines the method to save a move to the database
-=======
-
-    //Saves a move within our Supabase PostgreSQL database
->>>>>>> c64f96214cc677383dc7dea08ba4818d633b2e37
     public static void saveMove(
             long gameId,
             long playerId,

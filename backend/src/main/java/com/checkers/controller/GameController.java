@@ -29,13 +29,8 @@ public class GameController {
     }
 
     @PostMapping
-<<<<<<< HEAD
     // creates a new game with the specified visibility
     public ResponseEntity<?> createGame(@RequestParam GameVisibility visibility) {
-=======
-public ResponseEntity<?> createGame(
-        @RequestParam GameVisibility visibility) {
->>>>>>> 3ab36ff44c66a7af0e16228bbfd08ce18faafa7b
 
     String gameId = UUID.randomUUID()
             .toString()

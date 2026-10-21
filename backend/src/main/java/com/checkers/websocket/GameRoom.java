@@ -2,15 +2,13 @@
 package com.checkers.websocket;
 
 import org.springframework.web.socket.WebSocketSession;
-<<<<<<< HEAD
+import java.util.concurrent.ConcurrentHashMap;
+import com.checkers.logic.*;
+
 // represents a game room for the application
 // manages the players, game status, and visibility settings
 // provides methods for adding and removing players, checking game status, and retrieving player information
 // ensures that the game room is properly managed and that players cannot join or leave inappropriately
-=======
-import com.checkers.logic.GameLogic;
-
->>>>>>> 3ab36ff44c66a7af0e16228bbfd08ce18faafa7b
 public class GameRoom {
 
     public enum Status {
@@ -51,15 +49,12 @@ public class GameRoom {
     public String getGameId() {
         return gameId;
     }
-<<<<<<< HEAD
     // get the visibility of the game room
-=======
 
     public long getDatabaseGameId() {
         return databaseGameId;
     }
 
->>>>>>> 3ab36ff44c66a7af0e16228bbfd08ce18faafa7b
     public GameVisibility getVisibility() {
         return visibility;
     }
@@ -67,7 +62,7 @@ public class GameRoom {
     public String getJoinCode() {
         return joinCode;
     }
-<<<<<<< HEAD
+
     // get the first player of the game room
     public WebSocketSession getPlayer1() {
         return player1;
@@ -83,29 +78,13 @@ public class GameRoom {
         return status;
     }
 
-<<<<<<< HEAD
     // add a player to the game room
     // returns true if the player was successfully added, false otherwise
-    public boolean addPlayer(WebSocketSession session, String username) {
-=======
-=======
 
-    public synchronized WebSocketSession getPlayer1() {
-        return player1;
-    }
-
-    public synchronized WebSocketSession getPlayer2() {
-        return player2;
-    }
-
-    public synchronized Status getStatus() {
-        return status;
-    }
 
     public synchronized GameLogic getGameLogic() {
         return gameLogic;
     }
->>>>>>> c64f96214cc677383dc7dea08ba4818d633b2e37
 
     public synchronized String getPlayer1Username() {
         return player1Username;
@@ -118,7 +97,6 @@ public class GameRoom {
     public synchronized boolean addPlayer(
             WebSocketSession session,
             String username) {
->>>>>>> 3ab36ff44c66a7af0e16228bbfd08ce18faafa7b
 
         if (status == Status.FINISHED
                 || session == null
@@ -166,16 +144,11 @@ public class GameRoom {
         return false;
     }
 
-<<<<<<< HEAD
-    // remove a player from the game room
-    public void removePlayer(WebSocketSession session) {
-=======
     /**
      * Disconnect the session without releasing its player slot.
      */
     public synchronized int disconnectPlayer(
             WebSocketSession session) {
->>>>>>> c64f96214cc677383dc7dea08ba4818d633b2e37
 
         if (session == null) {
             return 0;
@@ -220,16 +193,10 @@ public class GameRoom {
         return false;
     }
 
-<<<<<<< HEAD
-    // check if the game room is full
-    // returns true if the game room is full, false otherwise
-    public boolean isFull() {
-=======
     public synchronized String getUsername(int playerNumber) {
         if (playerNumber == 1) {
             return player1Username;
         }
->>>>>>> c64f96214cc677383dc7dea08ba4818d633b2e37
 
         if (playerNumber == 2) {
             return player2Username;
@@ -238,19 +205,6 @@ public class GameRoom {
         return null;
     }
 
-<<<<<<< HEAD
-    // check if the game room is empty
-    // returns true if the game room is empty, false otherwise
-    public boolean isEmpty() {
-
-        return player1 == null &&
-                player2 == null;
-    }
-
-    // get the number of players in the game room
-    // returns the number of players as an integer
-    public int getPlayerCount() {
-=======
     public synchronized boolean isFull() {
         // A disconnected player's slot remains reserved.
         return player1Username != null
@@ -261,7 +215,6 @@ public class GameRoom {
         return player1Username == null
                 && player2Username == null;
     }
->>>>>>> c64f96214cc677383dc7dea08ba4818d633b2e37
 
     public synchronized int getPlayerCount() {
         int count = 0;
@@ -277,18 +230,6 @@ public class GameRoom {
         return count;
     }
 
-<<<<<<< HEAD
-    // get the username of the first player
-    // returns the username as a string
-    public String getPlayer1Username() {
-        return player1Username;
-    }
-
-    // get the username of the second player
-    // returns the username as a string
-    public String getPlayer2Username() {
-        return player2Username;
-=======
     public synchronized int getPlayerNumber(
             WebSocketSession session) {
 
@@ -323,7 +264,6 @@ public class GameRoom {
         }
 
         return 0;
->>>>>>> c64f96214cc677383dc7dea08ba4818d633b2e37
     }
 
     public synchronized void finish() {
