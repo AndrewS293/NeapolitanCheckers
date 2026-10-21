@@ -36,6 +36,8 @@ class AuthControllerTest {
         session = mock(HttpSession.class);
     }
 
+    //extra tests to verify registration/login/logout/me endpoints
+
     @Test
     void register_ValidRequest_ReturnsUserResponse() {
         RegisterRequest request = new RegisterRequest();

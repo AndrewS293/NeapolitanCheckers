@@ -15,6 +15,8 @@ import java.util.Map;
 
 public class AuthApi {
 
+        //sends info to our authcontroller to register/login/logout users
+
     private static final String BASE_URL =
             "https://neapolitancheckers.onrender.com/api/auth";
 
@@ -166,15 +168,7 @@ public class AuthApi {
     }
 
 
-    /*
-     * Extracts the "error" field returned by Spring Boot.
-     *
-     * Expected response:
-     *
-     * {
-     *     "error": "Username already exists."
-     * }
-     */
+   
     private String extractErrorMessage(
             String responseBody,
             String fallbackMessage) {

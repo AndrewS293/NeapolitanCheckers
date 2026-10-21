@@ -16,6 +16,8 @@ import java.util.List;
 import java.util.stream.Collectors;
 
 @RestController
+
+//Our endpoint for game creation
 @RequestMapping("/api/games")
 // implements gamecontroller component of application
 public class GameController {
@@ -90,6 +92,8 @@ public ResponseEntity<?> createGame(
             )
     );
 }
+
+        // Endpoint to get a list of open public games
     @GetMapping("/open")
     // retrieves a list of open public games
     public ResponseEntity<?> getOpenGames() {
@@ -106,6 +110,7 @@ public ResponseEntity<?> createGame(
         return ResponseEntity.ok(games);
     }
 
+    // Endpoint to join a public game by gameId
     @PostMapping("/{gameId}/join")
     // joins a public game by its game ID
     public ResponseEntity<?> joinPublicGame(@PathVariable String gameId) {
@@ -139,6 +144,7 @@ public ResponseEntity<?> createGame(
         );
     }
 
+    // Endpoint to join a private game by joinCode
     @PostMapping ("/join/{joinCode}")
     // joins a private game by its join code
     public ResponseEntity<?> joinPrivateGame(@PathVariable String joinCode) {
@@ -166,6 +172,8 @@ public ResponseEntity<?> createGame(
         );
     }
 
+
+    // Endpoint to get game details by gameId
     @GetMapping("/{gameId}")
     // retrieves a game by its game ID
     public ResponseEntity<?> getGame(@PathVariable String gameId) {

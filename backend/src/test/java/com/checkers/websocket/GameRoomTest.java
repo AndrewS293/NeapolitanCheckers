@@ -15,6 +15,8 @@ public class GameRoomTest {
     private WebSocketSession mockSession2;
     private WebSocketSession mockSession3;
 
+    //tests adding players to game room 
+
     @BeforeEach
     void setUp() {
         gameSession = new GameRoom("ABC123", 123456, GameVisibility.PUBLIC, "ABCDEF");

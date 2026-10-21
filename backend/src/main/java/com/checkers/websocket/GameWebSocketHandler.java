@@ -24,9 +24,13 @@ public class GameWebSocketHandler extends TextWebSocketHandler {
         this.objectMapper = new ObjectMapper();
     }
 
+<<<<<<< HEAD
 // Sends a message to a specific WebSocket session
 // Does nothing if the session is null or not open
 // Logs an error if sending the message fails
+=======
+    // Sends a message to a specific session
+>>>>>>> c64f96214cc677383dc7dea08ba4818d633b2e37
     private void sendMessage(
             WebSocketSession session,
             WebSocketMessage message) {
@@ -48,9 +52,14 @@ public class GameWebSocketHandler extends TextWebSocketHandler {
             );
         }
     }
+<<<<<<< HEAD
 // Broadcasts a message to all players in a specific game room
 // Does nothing if the game room does not exist
 // Logs an error if creating the WebSocket message fails
+=======
+
+    // Broadcasts a message to all players in the game room, used to send moves
+>>>>>>> c64f96214cc677383dc7dea08ba4818d633b2e37
     private void broadcast(
             String gameId,
             String type,
@@ -107,6 +116,7 @@ public class GameWebSocketHandler extends TextWebSocketHandler {
         sessionManager.sendToGame(gameId, json);
     }
 
+    // Called when a new WebSocket connection is established
     @Override
     // Handles the event when a WebSocket connection is established
     // Adds the session to the session manager
@@ -177,6 +187,7 @@ public class GameWebSocketHandler extends TextWebSocketHandler {
             return;
         }
 
+        boolean reconnecting = room.hasDisconnectedPlayer(username);
         boolean joined = sessionManager.joinRoom(gameId, session, username);
 
         if (!joined) {
@@ -196,7 +207,14 @@ public class GameWebSocketHandler extends TextWebSocketHandler {
             return;
         }
 
-        int playerNumber = room.getPlayerCount();
+        int playerNumber = room.getPlayerNumber(session);
+
+        if (playerNumber == 0) {
+            session.close();
+            return;
+        }
+
+        sessionManager.cancelReconnectTimeout(gameId, playerNumber);
 
         sendMessage(
             session,
@@ -211,13 +229,23 @@ public class GameWebSocketHandler extends TextWebSocketHandler {
             )
         );
 
-        broadcast(
-                gameId,
-                "PLAYER_JOINED",
-                playerNumber,
-                username,
-                username + " joined the game."
-        );
+        if (reconnecting) {
+            broadcast(
+                    gameId,
+                    "PLAYER_RECONNECTED",
+                    playerNumber,
+                    username,
+                    username + " reconnected to the game."
+            );
+        } else {
+            broadcast(
+                    gameId,
+                    "PLAYER_JOINED",
+                    playerNumber,
+                    username,
+                    username + " joined the game."
+            );
+        }
 
         if (room.getStatus() == GameRoom.Status.ACTIVE) {
             broadcast(
@@ -233,6 +261,7 @@ public class GameWebSocketHandler extends TextWebSocketHandler {
    
     
     @Override
+<<<<<<< HEAD
     // Handles the event when a text message is received from a WebSocket session
     // Retrieves the game ID from the session attributes
     // Returns if the game ID is missing
@@ -240,6 +269,9 @@ public class GameWebSocketHandler extends TextWebSocketHandler {
     // Returns if the game room does not exist
     // Logs the received message
     // Broadcasts the message to all players in the game room
+=======
+    // How websocket messages and broadcasts are handled, used for move validation and error handling
+>>>>>>> c64f96214cc677383dc7dea08ba4818d633b2e37
     protected void handleTextMessage(
             WebSocketSession session,
             TextMessage textMessage) throws Exception {
@@ -270,6 +302,19 @@ public class GameWebSocketHandler extends TextWebSocketHandler {
                     room.getStatus().name(), username,
                     "You are not a player in this room."
             ));
+            return;
+        }
+
+        if (room.getStatus() != GameRoom.Status.ACTIVE
+        || !room.isPlayerConnected(1)
+        || !room.isPlayerConnected(2)) {
+
+            sendMessage(session, new WebSocketMessage(
+                    "ERROR", gameId, playerNumber,
+                    room.getPlayerCount(), room.getStatus().name(),
+                    username, "The game is paused while a player is disconnected."
+            ));
+
             return;
         }
 
@@ -396,6 +441,7 @@ public class GameWebSocketHandler extends TextWebSocketHandler {
 
 
    @Override
+<<<<<<< HEAD
     // Handles the event when a WebSocket connection is closed
     // Retrieves the game ID from the session attributes
     // Returns if the game ID is missing
@@ -403,6 +449,10 @@ public class GameWebSocketHandler extends TextWebSocketHandler {
     // Returns if the game room does not exist
    
 public void afterConnectionClosed(
+=======
+   //called when a websocket connection is closed
+    public void afterConnectionClosed(
+>>>>>>> c64f96214cc677383dc7dea08ba4818d633b2e37
         WebSocketSession session,
         CloseStatus status) {
 
@@ -433,26 +483,20 @@ public void afterConnectionClosed(
                 ? room.getPlayer1Username()
                 : room.getPlayer2Username();
 
-        sessionManager.removePlayerFromGame(
-                gameId,
-                session
-        );
-
+        sessionManager.removePlayerFromGame(gameId, session);
         sessionManager.removeSession(session);
 
-        GameRoom updatedRoom =
-                sessionManager.getRoom(gameId);
+        GameRoom updatedRoom = sessionManager.getRoom(gameId);
 
-        
-        if (updatedRoom != null &&
-                !updatedRoom.isEmpty()) {
+        if (updatedRoom != null
+                && updatedRoom.getStatus() != GameRoom.Status.FINISHED) {
 
             broadcast(
                     gameId,
-                    "PLAYER_LEFT",
+                    "PLAYER_DISCONNECTED",
                     playerNumber,
                     username,
-                    username + " left the game."
+                    username + " disconnected. Waiting for reconnection."
             );
 
             broadcast(
@@ -460,11 +504,18 @@ public void afterConnectionClosed(
                     "GAME_WAITING",
                     null,
                     null,
-                    "Game is waiting for another player."
+                    "A player disconnected. The match is temporarily paused."
             );
         }
+
+            
     }
+<<<<<<< HEAD
     // Retrieves the player number of a session within a game room
+=======
+
+    //simple getters for broadcast message system
+>>>>>>> c64f96214cc677383dc7dea08ba4818d633b2e37
     private int getPlayerNumber(
             GameRoom room,
             WebSocketSession session) {

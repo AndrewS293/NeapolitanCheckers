@@ -10,6 +10,8 @@ import java.net.http.HttpResponse;
 
 public class GameApi {
 
+        //sends info to our gamecontroller to create/join/get games
+
     private static final String BASE_URL =
             "https://neapolitancheckers.onrender.com/api/games";
 
