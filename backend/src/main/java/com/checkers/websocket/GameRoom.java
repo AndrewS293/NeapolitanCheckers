@@ -1,10 +1,15 @@
 package com.checkers.websocket;
 
 import org.springframework.web.socket.WebSocketSession;
+<<<<<<< HEAD
 // represents a game room for the application
 // manages the players, game status, and visibility settings
 // provides methods for adding and removing players, checking game status, and retrieving player information
 // ensures that the game room is properly managed and that players cannot join or leave inappropriately
+=======
+import com.checkers.logic.GameLogic;
+
+>>>>>>> 3ab36ff44c66a7af0e16228bbfd08ce18faafa7b
 public class GameRoom {
 
     public enum Status {
@@ -12,11 +17,12 @@ public class GameRoom {
         ACTIVE,
         FINISHED
     }
-
+    //Our gameID that identifies the game room
     private final String gameId;
+    //The ID that goes in our database 
+    private final long databaseGameId;
 
-    private final GameVisibility visibility;
-
+    private final GameVisibility visibility; //PUBLIC or PRIVATE
     private final String joinCode;
 
     private WebSocketSession player1;
@@ -27,12 +33,16 @@ public class GameRoom {
 
     private Status status = Status.WAITING;
 
+    private GameLogic gameLogic = new GameLogic();
+
     public GameRoom(
             String gameId,
+            long databaseGameId,
             GameVisibility visibility,
             String joinCode) {
 
         this.gameId = gameId;
+        this.databaseGameId = databaseGameId;
         this.visibility = visibility;
         this.joinCode = joinCode;
     }
@@ -41,7 +51,15 @@ public class GameRoom {
     public String getGameId() {
         return gameId;
     }
+<<<<<<< HEAD
     // get the visibility of the game room
+=======
+
+    public long getDatabaseGameId() {
+        return databaseGameId;
+    }
+
+>>>>>>> 3ab36ff44c66a7af0e16228bbfd08ce18faafa7b
     public GameVisibility getVisibility() {
         return visibility;
     }
@@ -64,9 +82,16 @@ public class GameRoom {
         return status;
     }
 
+<<<<<<< HEAD
     // add a player to the game room
     // returns true if the player was successfully added, false otherwise
     public boolean addPlayer(WebSocketSession session, String username) {
+=======
+
+    public boolean addPlayer(
+            WebSocketSession session,
+            String username) {
+>>>>>>> 3ab36ff44c66a7af0e16228bbfd08ce18faafa7b
 
         if (status == Status.FINISHED) {
             return false;
@@ -94,12 +119,14 @@ public class GameRoom {
 
         if (player1 != null &&
                 player1.getId().equals(session.getId())) {
+
             player1 = null;
             player1Username = null;
         }
 
         if (player2 != null &&
                 player2.getId().equals(session.getId())) {
+
             player2 = null;
             player2Username = null;
         }
@@ -159,5 +186,9 @@ public class GameRoom {
     // returns the username as a string
     public String getPlayer2Username() {
         return player2Username;
+    }
+
+    public GameLogic getGameLogic() {
+        return gameLogic;
     }
 }

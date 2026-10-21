@@ -15,6 +15,7 @@ import java.util.List;
 // implements securityconfig component of application
 public class SecurityConfig {
 
+//Remove Cors and CSRF for local testing purposes
     @Bean
 
     public org.springframework.security.web.SecurityFilterChain securityFilterChain(
@@ -32,12 +33,14 @@ public class SecurityConfig {
         return http.build();
     }
 
+    //our password encoder bean
     @Bean
     // defines passwordencoder for application
     public PasswordEncoder passwordEncoder() {
         return new BCryptPasswordEncoder();
     }
 
+    // CORS configuration for allowing requests from any origin
     @Bean
     // defines cors configuration source for application
     public CorsConfigurationSource corsConfigurationSource() {
