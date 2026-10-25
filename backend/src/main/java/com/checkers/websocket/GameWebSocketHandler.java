@@ -9,6 +9,16 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.checkers.logic.Board;
 import com.checkers.logic.GameLogic;
+import com.checkers.logic.Board;
+import com.checkers.logic.GameLogic;
+
+// Add these imports:
+import com.checkers.database.MoveDAO;
+import com.checkers.logic.Move;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 
 @Component
 // WebSocket handler for managing game connections and messages
@@ -378,12 +388,32 @@ public class GameWebSocketHandler extends TextWebSocketHandler {
             return;
         }
 
-        GameLogic gameLogic = room.getGameLogic();
-        boolean accepted;
+                synchronized (room) {
 
-        // Validate the turn and apply the move atomically for this room.
-        synchronized (room) {
-            int expectedPlayer = gameLogic.getCurrentPlayer()
+            if (room.getStatus() != GameRoom.Status.ACTIVE
+                    || !room.isPlayerConnected(1)
+                    || !room.isPlayerConnected(2)) {
+
+                sendMessage(session, new WebSocketMessage(
+                        "ERROR", gameId, playerNumber,
+                        room.getPlayerCount(), room.getStatus().name(),
+                        username, "The game is paused."
+                ));
+                return;
+            }
+
+            if (room.getPlayerNumber(session) != playerNumber) {
+                sendMessage(session, new WebSocketMessage(
+                        "ERROR", gameId, playerNumber,
+                        room.getPlayerCount(), room.getStatus().name(),
+                        username, "This connection is no longer a player."
+                ));
+                return;
+            }
+
+            GameLogic currentGame = room.getGameLogic();
+
+            int expectedPlayer = currentGame.getCurrentPlayer()
                     == GameLogic.red_player ? 1 : 2;
 
             if (playerNumber != expectedPlayer) {
@@ -395,33 +425,162 @@ public class GameWebSocketHandler extends TextWebSocketHandler {
                 return;
             }
 
-            accepted = gameLogic.move(start, end);
+            Object sessionUserId = session.getAttributes().get("userId");
+
+            if (!(sessionUserId instanceof Number)
+                    || ((Number) sessionUserId).longValue() <= 0) {
+
+                sendMessage(session, new WebSocketMessage(
+                        "ERROR", gameId, playerNumber,
+                        room.getPlayerCount(), room.getStatus().name(),
+                        username, "Please log in again before moving."
+                ));
+                return;
+            }
+
+            long playerId = ((Number) sessionUserId).longValue();
+
+            // Test the move without changing the live game.
+            GameLogic temporaryGame = currentGame.copy();
+
+            if (!temporaryGame.move(start, end)) {
+                sendMessage(session, new WebSocketMessage(
+                        "ERROR", gameId, playerNumber,
+                        room.getPlayerCount(), room.getStatus().name(),
+                        username, "Illegal move. The move was rejected."
+                ));
+                return;
+            }
+
+            Move acceptedMove = new Move(start, end);
+
+            boolean capture = acceptedMove.isJump();
+            boolean wasKing = currentGame.getBoard()
+                    .getPiece(start).isKing();
+            boolean king = temporaryGame.getBoard()
+                    .getPiece(end).isKing();
+            boolean promoted = !wasKing && king;
+
+            String fromSquare = ""
+                    + (char) ('a' + fromCol)
+                    + (8 - fromRow);
+
+            String toSquare = ""
+                    + (char) ('a' + toCol)
+                    + (8 - toRow);
+
+            List<String> capturedSquares = new ArrayList<>();
+
+            if (capture) {
+                int capturedIndex = acceptedMove.getMiddleSquare();
+
+                capturedSquares.add(
+                        "" + (char) ('a' + Board.getCol(capturedIndex))
+                                + (8 - Board.getRow(capturedIndex))
+                );
+            }
+
+            List<String> soundCues = new ArrayList<>();
+            List<String> animationCues = new ArrayList<>();
+
+            soundCues.add(capture ? "CAPTURE" : "MOVE");
+            animationCues.add(capture ? "JUMP" : "SLIDE");
+
+            if (promoted) {
+                soundCues.add("PROMOTION");
+                animationCues.add("CROWN");
+            }
+
+            if (temporaryGame.isGameOver()) {
+                boolean draw = temporaryGame.getGameState()
+                        == GameLogic.GameState.DRAW;
+
+                soundCues.add(draw ? "DRAW" : "VICTORY");
+                animationCues.add(draw ? "DRAW" : "CELEBRATE");
+            }
+
+            int moveNumber = room.getSavedMoveCount() + 1;
+
+            Map<String, Object> moveData = new HashMap<>();
+
+            moveData.put("version", 1);
+            moveData.put("moveNumber", moveNumber);
+
+            moveData.put("start", start);
+            moveData.put("end", end);
+
+            moveData.put("fromRow", fromRow);
+            moveData.put("fromCol", fromCol);
+            moveData.put("toRow", toRow);
+            moveData.put("toCol", toCol);
+
+            moveData.put("from", fromSquare);
+            moveData.put("to", toSquare);
+            moveData.put(
+                    "notation",
+                    fromSquare + (capture ? "x" : "-") + toSquare
+            );
+
+            moveData.put("capture", capture);
+            moveData.put("captured", capturedSquares);
+            moveData.put("wasKing", wasKing);
+            moveData.put("king", king);
+            moveData.put("promoted", promoted);
+
+            moveData.put("player", currentGame.getCurrentPlayer());
+            moveData.put("nextPlayer", temporaryGame.getCurrentPlayer());
+            moveData.put(
+                    "forcedJumpIndex",
+                    temporaryGame.getForcedJumpIndex()
+            );
+            moveData.put(
+                    "turnComplete",
+                    !temporaryGame.isMultiJumpInProgress()
+            );
+            moveData.put(
+                    "gameState",
+                    temporaryGame.getGameState().name()
+            );
+
+            moveData.put("soundCues", soundCues);
+            moveData.put("animationCues", animationCues);
+            moveData.put(
+                    "animationDurationMs",
+                    capture || promoted ? 350 : 200
+            );
+
+            String savedMoveMessage =
+                    objectMapper.writeValueAsString(moveData);
+
+            // Save before changing the live game.
+            boolean saved = MoveDAO.saveMove(
+                    room.getDatabaseGameId(),
+                    playerId,
+                    moveNumber,
+                    moveData
+            );
+
+            if (!saved) {
+                sendMessage(session, new WebSocketMessage(
+                        "ERROR", gameId, playerNumber,
+                        room.getPlayerCount(), room.getStatus().name(),
+                        username,
+                        "The move could not be confirmed as saved. "
+                                + "The live board has not changed."
+                ));
+                return;
+            }
+
+            room.commitSavedMove(temporaryGame);
+
+            broadcast(
+                    gameId,
+                    "MOVE",
+                    playerNumber,
+                    username,
+                    savedMoveMessage
+            );
         }
-
-        if (!accepted) {
-            sendMessage(session, new WebSocketMessage(
-                    "ERROR", gameId, playerNumber,
-                    room.getPlayerCount(), room.getStatus().name(),
-                    username, "Illegal move. The move was rejected."
-            ));
-            return;
-        }
-
-        System.out.println(
-                "SERVER ACCEPTED MOVE: game=" + gameId
-                        + ", player=" + playerNumber
-                        + ", " + fromRow + "," + fromCol
-                        + " -> " + toRow + "," + toCol
-        );
-
-        // Only broadcast moves accepted by the server.
-        broadcast(
-                gameId,
-                "MOVE",
-                playerNumber,
-                username,
-                move.toString()
-        );
 
     }
 

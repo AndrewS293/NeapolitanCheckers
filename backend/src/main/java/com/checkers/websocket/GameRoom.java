@@ -32,7 +32,10 @@ public class GameRoom {
     private Status status = Status.WAITING;
 
     // Each room keeps its own board and turn state.
-    private final GameLogic gameLogic = new GameLogic();
+    private GameLogic gameLogic = new GameLogic();
+
+// Counts moves successfully saved to the database.
+    private int savedMoveCount = 0;
 
     public GameRoom(
             String gameId,
@@ -85,6 +88,16 @@ public class GameRoom {
     public synchronized GameLogic getGameLogic() {
         return gameLogic;
     }
+    
+    public synchronized int getSavedMoveCount() {
+    return savedMoveCount;
+}
+
+// Call only after the database confirms that the move was saved.
+public synchronized void commitSavedMove(GameLogic validatedGame) {
+    gameLogic = validatedGame;
+    savedMoveCount++;
+}
 
     public synchronized String getPlayer1Username() {
         return player1Username;

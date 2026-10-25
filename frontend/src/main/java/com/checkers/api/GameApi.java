@@ -13,7 +13,7 @@ public class GameApi {
         //sends info to our gamecontroller to create/join/get games
 
     private static final String BASE_URL =
-            "https://neapolitancheckers.onrender.com/api/games";
+        "https://neapolitancheckers.onrender.com/api/games";;
 
     private final HttpClient client;
     private final ObjectMapper mapper;

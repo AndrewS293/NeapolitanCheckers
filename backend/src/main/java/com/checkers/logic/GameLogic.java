@@ -40,6 +40,33 @@ public class GameLogic {
         recordCurrentPosition();
     }
 
+    // Creates an independent copy for checking a move before saving it.
+public GameLogic copy() {
+    GameLogic copiedGame = new GameLogic();
+
+    // Copy every piece, including whether it is a king.
+    for (int index = 0; index < Board.playable_squares; index++) {
+        Piece originalPiece = board.getPiece(index);
+
+        copiedGame.board.setPiece(
+                index,
+                new Piece(originalPiece.getType())
+        );
+    }
+
+    // Replace the new game's starting history with the current history.
+    copiedGame.positionCounts.clear();
+    copiedGame.positionCounts.putAll(positionCounts);
+
+    // Copy the turn, multijump, draw counter, and game result.
+    copiedGame.currentPlayer = currentPlayer;
+    copiedGame.forcedJumpIndex = forcedJumpIndex;
+    copiedGame.turnsWithoutProgress = turnsWithoutProgress;
+    copiedGame.gameState = gameState;
+
+    return copiedGame;
+}
+
     public Board getBoard() {
         return board;
     }

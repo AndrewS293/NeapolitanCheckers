@@ -18,7 +18,7 @@ public class AuthApi {
         //sends info to our authcontroller to register/login/logout users
 
     private static final String BASE_URL =
-            "https://neapolitancheckers.onrender.com/api/auth";
+        "https://neapolitancheckers.onrender.com/api/auth";
 
     private final HttpClient client;
     private final ObjectMapper mapper;

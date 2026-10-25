@@ -16,7 +16,7 @@ import java.util.function.Consumer;
 public class GameWebSocketClient implements WebSocket.Listener {
 
     private static final String WS_URL =
-            "wss://neapolitancheckers.onrender.com/online";
+        "wss://neapolitancheckers.onrender.com/online";
 
     private final ObjectMapper mapper = new ObjectMapper();
     private volatile Consumer<JsonNode> messageHandler;
