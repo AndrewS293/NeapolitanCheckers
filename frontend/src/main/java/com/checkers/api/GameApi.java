@@ -92,7 +92,49 @@ public class GameApi {
 
         return send(request);
     }
+    // Retrieves all saved moves for a game.
+    public JsonNode getReplay(long databaseGameId)
+            throws Exception {
 
+        if (databaseGameId <= 0) {
+            throw new IllegalArgumentException(
+                    "Invalid database game ID."
+            );
+        }
+
+        HttpRequest request = HttpRequest.newBuilder()
+                .uri(URI.create(
+                        BASE_URL + "/" + databaseGameId + "/replay"
+                ))
+                .GET()
+                .header("Accept", "application/json")
+                .build();
+
+        return send(request);
+    }
+
+    // Retrieves the board after a selected number of moves.
+    public JsonNode getReplayPosition(
+            long databaseGameId,
+            int position) throws Exception {
+
+        if (databaseGameId <= 0 || position < 0) {
+            throw new IllegalArgumentException(
+                    "Invalid game ID or replay position."
+            );
+        }
+
+        HttpRequest request = HttpRequest.newBuilder()
+                .uri(URI.create(
+                        BASE_URL + "/" + databaseGameId
+                                + "/replay?position=" + position
+                ))
+                .GET()
+                .header("Accept", "application/json")
+                .build();
+
+        return send(request);
+    }
     private JsonNode send(HttpRequest request)
             throws Exception {
 
