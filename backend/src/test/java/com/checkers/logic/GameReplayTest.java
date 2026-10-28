@@ -106,4 +106,57 @@ class GameReplayTest {
                         .getBoard().getPiece(20).isRed()
         );
     }
+        @Test
+    void replayCaptureAndRestoreCapturedPiece() throws Exception {
+
+        ArrayNode moves = (ArrayNode) new ObjectMapper().readTree("""
+                [
+                    {
+                        "move_number": 1,
+                        "move_data": {
+                            "start": 20,
+                            "end": 16
+                        }
+                    },
+                    {
+                        "move_number": 2,
+                        "move_data": {
+                            "start": 9,
+                            "end": 13
+                        }
+                    },
+                    {
+                        "move_number": 3,
+                        "move_data": {
+                            "start": 16,
+                            "end": 9
+                        }
+                    }
+                ]
+                """);
+
+        GameReplay replay = new GameReplay(moves);
+
+        // Before capture: red is at 16, black is at 13.
+        GameLogic beforeCapture = replay.seek(2);
+
+        assertTrue(beforeCapture.getBoard().getPiece(16).isRed());
+        assertTrue(beforeCapture.getBoard().getPiece(13).isBlack());
+
+        // Red captures black and lands at 9.
+        GameLogic afterCapture = replay.next();
+
+        assertEquals(3, replay.getPosition());
+        assertTrue(afterCapture.getBoard().getPiece(9).isRed());
+        assertTrue(afterCapture.getBoard().getPiece(13).isEmpty());
+        assertTrue(afterCapture.getBoard().getPiece(16).isEmpty());
+
+        // Going backward restores the captured piece.
+        GameLogic restored = replay.previous();
+
+        assertEquals(2, replay.getPosition());
+        assertTrue(restored.getBoard().getPiece(16).isRed());
+        assertTrue(restored.getBoard().getPiece(13).isBlack());
+        assertTrue(restored.getBoard().getPiece(9).isEmpty());
+    }
 }

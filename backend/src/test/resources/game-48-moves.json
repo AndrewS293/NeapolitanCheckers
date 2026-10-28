@@ -1,0 +1,1016 @@
+[
+  {
+    "move_number": 1,
+    "move_data": {
+      "to": "d4",
+      "end": 17,
+      "from": "e3",
+      "king": false,
+      "start": 22,
+      "toCol": 3,
+      "toRow": 4,
+      "player": 1,
+      "capture": false,
+      "fromCol": 4,
+      "fromRow": 5,
+      "version": 1,
+      "wasKing": false,
+      "captured": [],
+      "notation": "e3-d4",
+      "promoted": false,
+      "gameState": "IN_PROGRESS",
+      "soundCues": [
+        "MOVE"
+      ],
+      "moveNumber": 1,
+      "nextPlayer": 2,
+      "turnComplete": true,
+      "animationCues": [
+        "SLIDE"
+      ],
+      "forcedJumpIndex": -1,
+      "animationDurationMs": 200
+    }
+  },
+  {
+    "move_number": 2,
+    "move_data": {
+      "to": "e5",
+      "end": 14,
+      "from": "f6",
+      "king": false,
+      "start": 10,
+      "toCol": 4,
+      "toRow": 3,
+      "player": 2,
+      "capture": false,
+      "fromCol": 5,
+      "fromRow": 2,
+      "version": 1,
+      "wasKing": false,
+      "captured": [],
+      "notation": "f6-e5",
+      "promoted": false,
+      "gameState": "IN_PROGRESS",
+      "soundCues": [
+        "MOVE"
+      ],
+      "moveNumber": 2,
+      "nextPlayer": 1,
+      "turnComplete": true,
+      "animationCues": [
+        "SLIDE"
+      ],
+      "forcedJumpIndex": -1,
+      "animationDurationMs": 200
+    }
+  },
+  {
+    "move_number": 3,
+    "move_data": {
+      "to": "f6",
+      "end": 10,
+      "from": "d4",
+      "king": false,
+      "start": 17,
+      "toCol": 5,
+      "toRow": 2,
+      "player": 1,
+      "capture": true,
+      "fromCol": 3,
+      "fromRow": 4,
+      "version": 1,
+      "wasKing": false,
+      "captured": [
+        "e5"
+      ],
+      "notation": "d4xf6",
+      "promoted": false,
+      "gameState": "IN_PROGRESS",
+      "soundCues": [
+        "CAPTURE"
+      ],
+      "moveNumber": 3,
+      "nextPlayer": 2,
+      "turnComplete": true,
+      "animationCues": [
+        "JUMP"
+      ],
+      "forcedJumpIndex": -1,
+      "animationDurationMs": 350
+    }
+  },
+  {
+    "move_number": 4,
+    "move_data": {
+      "to": "e5",
+      "end": 14,
+      "from": "g7",
+      "king": false,
+      "start": 7,
+      "toCol": 4,
+      "toRow": 3,
+      "player": 2,
+      "capture": true,
+      "fromCol": 6,
+      "fromRow": 1,
+      "version": 1,
+      "wasKing": false,
+      "captured": [
+        "f6"
+      ],
+      "notation": "g7xe5",
+      "promoted": false,
+      "gameState": "IN_PROGRESS",
+      "soundCues": [
+        "CAPTURE"
+      ],
+      "moveNumber": 4,
+      "nextPlayer": 1,
+      "turnComplete": true,
+      "animationCues": [
+        "JUMP"
+      ],
+      "forcedJumpIndex": -1,
+      "animationDurationMs": 350
+    }
+  },
+  {
+    "move_number": 5,
+    "move_data": {
+      "to": "d4",
+      "end": 17,
+      "from": "c3",
+      "king": false,
+      "start": 21,
+      "toCol": 3,
+      "toRow": 4,
+      "player": 1,
+      "capture": false,
+      "fromCol": 2,
+      "fromRow": 5,
+      "version": 1,
+      "wasKing": false,
+      "captured": [],
+      "notation": "c3-d4",
+      "promoted": false,
+      "gameState": "IN_PROGRESS",
+      "soundCues": [
+        "MOVE"
+      ],
+      "moveNumber": 5,
+      "nextPlayer": 2,
+      "turnComplete": true,
+      "animationCues": [
+        "SLIDE"
+      ],
+      "forcedJumpIndex": -1,
+      "animationDurationMs": 200
+    }
+  },
+  {
+    "move_number": 6,
+    "move_data": {
+      "to": "c3",
+      "end": 21,
+      "from": "e5",
+      "king": false,
+      "start": 14,
+      "toCol": 2,
+      "toRow": 5,
+      "player": 2,
+      "capture": true,
+      "fromCol": 4,
+      "fromRow": 3,
+      "version": 1,
+      "wasKing": false,
+      "captured": [
+        "d4"
+      ],
+      "notation": "e5xc3",
+      "promoted": false,
+      "gameState": "IN_PROGRESS",
+      "soundCues": [
+        "CAPTURE"
+      ],
+      "moveNumber": 6,
+      "nextPlayer": 1,
+      "turnComplete": true,
+      "animationCues": [
+        "JUMP"
+      ],
+      "forcedJumpIndex": -1,
+      "animationDurationMs": 350
+    }
+  },
+  {
+    "move_number": 7,
+    "move_data": {
+      "to": "d4",
+      "end": 17,
+      "from": "b2",
+      "king": false,
+      "start": 24,
+      "toCol": 3,
+      "toRow": 4,
+      "player": 1,
+      "capture": true,
+      "fromCol": 1,
+      "fromRow": 6,
+      "version": 1,
+      "wasKing": false,
+      "captured": [
+        "c3"
+      ],
+      "notation": "b2xd4",
+      "promoted": false,
+      "gameState": "IN_PROGRESS",
+      "soundCues": [
+        "CAPTURE"
+      ],
+      "moveNumber": 7,
+      "nextPlayer": 2,
+      "turnComplete": true,
+      "animationCues": [
+        "JUMP"
+      ],
+      "forcedJumpIndex": -1,
+      "animationDurationMs": 350
+    }
+  },
+  {
+    "move_number": 8,
+    "move_data": {
+      "to": "f6",
+      "end": 10,
+      "from": "e7",
+      "king": false,
+      "start": 6,
+      "toCol": 5,
+      "toRow": 2,
+      "player": 2,
+      "capture": false,
+      "fromCol": 4,
+      "fromRow": 1,
+      "version": 1,
+      "wasKing": false,
+      "captured": [],
+      "notation": "e7-f6",
+      "promoted": false,
+      "gameState": "IN_PROGRESS",
+      "soundCues": [
+        "MOVE"
+      ],
+      "moveNumber": 8,
+      "nextPlayer": 1,
+      "turnComplete": true,
+      "animationCues": [
+        "SLIDE"
+      ],
+      "forcedJumpIndex": -1,
+      "animationDurationMs": 200
+    }
+  },
+  {
+    "move_number": 9,
+    "move_data": {
+      "to": "b4",
+      "end": 16,
+      "from": "a3",
+      "king": false,
+      "start": 20,
+      "toCol": 1,
+      "toRow": 4,
+      "player": 1,
+      "capture": false,
+      "fromCol": 0,
+      "fromRow": 5,
+      "version": 1,
+      "wasKing": false,
+      "captured": [],
+      "notation": "a3-b4",
+      "promoted": false,
+      "gameState": "IN_PROGRESS",
+      "soundCues": [
+        "MOVE"
+      ],
+      "moveNumber": 9,
+      "nextPlayer": 2,
+      "turnComplete": true,
+      "animationCues": [
+        "SLIDE"
+      ],
+      "forcedJumpIndex": -1,
+      "animationDurationMs": 200
+    }
+  },
+  {
+    "move_number": 10,
+    "move_data": {
+      "to": "e5",
+      "end": 14,
+      "from": "f6",
+      "king": false,
+      "start": 10,
+      "toCol": 4,
+      "toRow": 3,
+      "player": 2,
+      "capture": false,
+      "fromCol": 5,
+      "fromRow": 2,
+      "version": 1,
+      "wasKing": false,
+      "captured": [],
+      "notation": "f6-e5",
+      "promoted": false,
+      "gameState": "IN_PROGRESS",
+      "soundCues": [
+        "MOVE"
+      ],
+      "moveNumber": 10,
+      "nextPlayer": 1,
+      "turnComplete": true,
+      "animationCues": [
+        "SLIDE"
+      ],
+      "forcedJumpIndex": -1,
+      "animationDurationMs": 200
+    }
+  },
+  {
+    "move_number": 11,
+    "move_data": {
+      "to": "f6",
+      "end": 10,
+      "from": "d4",
+      "king": false,
+      "start": 17,
+      "toCol": 5,
+      "toRow": 2,
+      "player": 1,
+      "capture": true,
+      "fromCol": 3,
+      "fromRow": 4,
+      "version": 1,
+      "wasKing": false,
+      "captured": [
+        "e5"
+      ],
+      "notation": "d4xf6",
+      "promoted": false,
+      "gameState": "IN_PROGRESS",
+      "soundCues": [
+        "CAPTURE"
+      ],
+      "moveNumber": 11,
+      "nextPlayer": 2,
+      "turnComplete": true,
+      "animationCues": [
+        "JUMP"
+      ],
+      "forcedJumpIndex": -1,
+      "animationDurationMs": 350
+    }
+  },
+  {
+    "move_number": 12,
+    "move_data": {
+      "to": "c5",
+      "end": 13,
+      "from": "b6",
+      "king": false,
+      "start": 8,
+      "toCol": 2,
+      "toRow": 3,
+      "player": 2,
+      "capture": false,
+      "fromCol": 1,
+      "fromRow": 2,
+      "version": 1,
+      "wasKing": false,
+      "captured": [],
+      "notation": "b6-c5",
+      "promoted": false,
+      "gameState": "IN_PROGRESS",
+      "soundCues": [
+        "MOVE"
+      ],
+      "moveNumber": 12,
+      "nextPlayer": 1,
+      "turnComplete": true,
+      "animationCues": [
+        "SLIDE"
+      ],
+      "forcedJumpIndex": -1,
+      "animationDurationMs": 200
+    }
+  },
+  {
+    "move_number": 13,
+    "move_data": {
+      "to": "g7",
+      "end": 7,
+      "from": "f6",
+      "king": false,
+      "start": 10,
+      "toCol": 6,
+      "toRow": 1,
+      "player": 1,
+      "capture": false,
+      "fromCol": 5,
+      "fromRow": 2,
+      "version": 1,
+      "wasKing": false,
+      "captured": [],
+      "notation": "f6-g7",
+      "promoted": false,
+      "gameState": "IN_PROGRESS",
+      "soundCues": [
+        "MOVE"
+      ],
+      "moveNumber": 13,
+      "nextPlayer": 2,
+      "turnComplete": true,
+      "animationCues": [
+        "SLIDE"
+      ],
+      "forcedJumpIndex": -1,
+      "animationDurationMs": 200
+    }
+  },
+  {
+    "move_number": 14,
+    "move_data": {
+      "to": "a3",
+      "end": 20,
+      "from": "c5",
+      "king": false,
+      "start": 13,
+      "toCol": 0,
+      "toRow": 5,
+      "player": 2,
+      "capture": true,
+      "fromCol": 2,
+      "fromRow": 3,
+      "version": 1,
+      "wasKing": false,
+      "captured": [
+        "b4"
+      ],
+      "notation": "c5xa3",
+      "promoted": false,
+      "gameState": "IN_PROGRESS",
+      "soundCues": [
+        "CAPTURE"
+      ],
+      "moveNumber": 14,
+      "nextPlayer": 1,
+      "turnComplete": true,
+      "animationCues": [
+        "JUMP"
+      ],
+      "forcedJumpIndex": -1,
+      "animationDurationMs": 350
+    }
+  },
+  {
+    "move_number": 15,
+    "move_data": {
+      "to": "c3",
+      "end": 21,
+      "from": "d2",
+      "king": false,
+      "start": 25,
+      "toCol": 2,
+      "toRow": 5,
+      "player": 1,
+      "capture": false,
+      "fromCol": 3,
+      "fromRow": 6,
+      "version": 1,
+      "wasKing": false,
+      "captured": [],
+      "notation": "d2-c3",
+      "promoted": false,
+      "gameState": "IN_PROGRESS",
+      "soundCues": [
+        "MOVE"
+      ],
+      "moveNumber": 15,
+      "nextPlayer": 2,
+      "turnComplete": true,
+      "animationCues": [
+        "SLIDE"
+      ],
+      "forcedJumpIndex": -1,
+      "animationDurationMs": 200
+    }
+  },
+  {
+    "move_number": 16,
+    "move_data": {
+      "to": "f6",
+      "end": 10,
+      "from": "h8",
+      "king": false,
+      "start": 3,
+      "toCol": 5,
+      "toRow": 2,
+      "player": 2,
+      "capture": true,
+      "fromCol": 7,
+      "fromRow": 0,
+      "version": 1,
+      "wasKing": false,
+      "captured": [
+        "g7"
+      ],
+      "notation": "h8xf6",
+      "promoted": false,
+      "gameState": "IN_PROGRESS",
+      "soundCues": [
+        "CAPTURE"
+      ],
+      "moveNumber": 16,
+      "nextPlayer": 1,
+      "turnComplete": true,
+      "animationCues": [
+        "JUMP"
+      ],
+      "forcedJumpIndex": -1,
+      "animationDurationMs": 350
+    }
+  },
+  {
+    "move_number": 17,
+    "move_data": {
+      "to": "b4",
+      "end": 16,
+      "from": "c3",
+      "king": false,
+      "start": 21,
+      "toCol": 1,
+      "toRow": 4,
+      "player": 1,
+      "capture": false,
+      "fromCol": 2,
+      "fromRow": 5,
+      "version": 1,
+      "wasKing": false,
+      "captured": [],
+      "notation": "c3-b4",
+      "promoted": false,
+      "gameState": "IN_PROGRESS",
+      "soundCues": [
+        "MOVE"
+      ],
+      "moveNumber": 17,
+      "nextPlayer": 2,
+      "turnComplete": true,
+      "animationCues": [
+        "SLIDE"
+      ],
+      "forcedJumpIndex": -1,
+      "animationDurationMs": 200
+    }
+  },
+  {
+    "move_number": 18,
+    "move_data": {
+      "to": "e7",
+      "end": 6,
+      "from": "f8",
+      "king": false,
+      "start": 2,
+      "toCol": 4,
+      "toRow": 1,
+      "player": 2,
+      "capture": false,
+      "fromCol": 5,
+      "fromRow": 0,
+      "version": 1,
+      "wasKing": false,
+      "captured": [],
+      "notation": "f8-e7",
+      "promoted": false,
+      "gameState": "IN_PROGRESS",
+      "soundCues": [
+        "MOVE"
+      ],
+      "moveNumber": 18,
+      "nextPlayer": 1,
+      "turnComplete": true,
+      "animationCues": [
+        "SLIDE"
+      ],
+      "forcedJumpIndex": -1,
+      "animationDurationMs": 200
+    }
+  },
+  {
+    "move_number": 19,
+    "move_data": {
+      "to": "e3",
+      "end": 22,
+      "from": "f2",
+      "king": false,
+      "start": 26,
+      "toCol": 4,
+      "toRow": 5,
+      "player": 1,
+      "capture": false,
+      "fromCol": 5,
+      "fromRow": 6,
+      "version": 1,
+      "wasKing": false,
+      "captured": [],
+      "notation": "f2-e3",
+      "promoted": false,
+      "gameState": "IN_PROGRESS",
+      "soundCues": [
+        "MOVE"
+      ],
+      "moveNumber": 19,
+      "nextPlayer": 2,
+      "turnComplete": true,
+      "animationCues": [
+        "SLIDE"
+      ],
+      "forcedJumpIndex": -1,
+      "animationDurationMs": 200
+    }
+  },
+  {
+    "move_number": 20,
+    "move_data": {
+      "to": "c5",
+      "end": 13,
+      "from": "d6",
+      "king": false,
+      "start": 9,
+      "toCol": 2,
+      "toRow": 3,
+      "player": 2,
+      "capture": false,
+      "fromCol": 3,
+      "fromRow": 2,
+      "version": 1,
+      "wasKing": false,
+      "captured": [],
+      "notation": "d6-c5",
+      "promoted": false,
+      "gameState": "IN_PROGRESS",
+      "soundCues": [
+        "MOVE"
+      ],
+      "moveNumber": 20,
+      "nextPlayer": 1,
+      "turnComplete": true,
+      "animationCues": [
+        "SLIDE"
+      ],
+      "forcedJumpIndex": -1,
+      "animationDurationMs": 200
+    }
+  },
+  {
+    "move_number": 21,
+    "move_data": {
+      "to": "d6",
+      "end": 9,
+      "from": "b4",
+      "king": false,
+      "start": 16,
+      "toCol": 3,
+      "toRow": 2,
+      "player": 1,
+      "capture": true,
+      "fromCol": 1,
+      "fromRow": 4,
+      "version": 1,
+      "wasKing": false,
+      "captured": [
+        "c5"
+      ],
+      "notation": "b4xd6",
+      "promoted": false,
+      "gameState": "IN_PROGRESS",
+      "soundCues": [
+        "CAPTURE"
+      ],
+      "moveNumber": 21,
+      "nextPlayer": 1,
+      "turnComplete": false,
+      "animationCues": [
+        "JUMP"
+      ],
+      "forcedJumpIndex": 9,
+      "animationDurationMs": 350
+    }
+  },
+  {
+    "move_number": 22,
+    "move_data": {
+      "to": "f8",
+      "end": 2,
+      "from": "d6",
+      "king": true,
+      "start": 9,
+      "toCol": 5,
+      "toRow": 0,
+      "player": 1,
+      "capture": true,
+      "fromCol": 3,
+      "fromRow": 2,
+      "version": 1,
+      "wasKing": false,
+      "captured": [
+        "e7"
+      ],
+      "notation": "d6xf8",
+      "promoted": true,
+      "gameState": "IN_PROGRESS",
+      "soundCues": [
+        "CAPTURE",
+        "PROMOTION"
+      ],
+      "moveNumber": 22,
+      "nextPlayer": 2,
+      "turnComplete": true,
+      "animationCues": [
+        "JUMP",
+        "CROWN"
+      ],
+      "forcedJumpIndex": -1,
+      "animationDurationMs": 350
+    }
+  },
+  {
+    "move_number": 23,
+    "move_data": {
+      "to": "d6",
+      "end": 9,
+      "from": "c7",
+      "king": false,
+      "start": 5,
+      "toCol": 3,
+      "toRow": 2,
+      "player": 2,
+      "capture": false,
+      "fromCol": 2,
+      "fromRow": 1,
+      "version": 1,
+      "wasKing": false,
+      "captured": [],
+      "notation": "c7-d6",
+      "promoted": false,
+      "gameState": "IN_PROGRESS",
+      "soundCues": [
+        "MOVE"
+      ],
+      "moveNumber": 23,
+      "nextPlayer": 1,
+      "turnComplete": true,
+      "animationCues": [
+        "SLIDE"
+      ],
+      "forcedJumpIndex": -1,
+      "animationDurationMs": 200
+    }
+  },
+  {
+    "move_number": 24,
+    "move_data": {
+      "to": "f4",
+      "end": 18,
+      "from": "g3",
+      "king": false,
+      "start": 23,
+      "toCol": 5,
+      "toRow": 4,
+      "player": 1,
+      "capture": false,
+      "fromCol": 6,
+      "fromRow": 5,
+      "version": 1,
+      "wasKing": false,
+      "captured": [],
+      "notation": "g3-f4",
+      "promoted": false,
+      "gameState": "IN_PROGRESS",
+      "soundCues": [
+        "MOVE"
+      ],
+      "moveNumber": 24,
+      "nextPlayer": 2,
+      "turnComplete": true,
+      "animationCues": [
+        "SLIDE"
+      ],
+      "forcedJumpIndex": -1,
+      "animationDurationMs": 200
+    }
+  },
+  {
+    "move_number": 25,
+    "move_data": {
+      "to": "b6",
+      "end": 8,
+      "from": "a7",
+      "king": false,
+      "start": 4,
+      "toCol": 1,
+      "toRow": 2,
+      "player": 2,
+      "capture": false,
+      "fromCol": 0,
+      "fromRow": 1,
+      "version": 1,
+      "wasKing": false,
+      "captured": [],
+      "notation": "a7-b6",
+      "promoted": false,
+      "gameState": "IN_PROGRESS",
+      "soundCues": [
+        "MOVE"
+      ],
+      "moveNumber": 25,
+      "nextPlayer": 1,
+      "turnComplete": true,
+      "animationCues": [
+        "SLIDE"
+      ],
+      "forcedJumpIndex": -1,
+      "animationDurationMs": 200
+    }
+  },
+  {
+    "move_number": 26,
+    "move_data": {
+      "to": "g3",
+      "end": 23,
+      "from": "h2",
+      "king": false,
+      "start": 27,
+      "toCol": 6,
+      "toRow": 5,
+      "player": 1,
+      "capture": false,
+      "fromCol": 7,
+      "fromRow": 6,
+      "version": 1,
+      "wasKing": false,
+      "captured": [],
+      "notation": "h2-g3",
+      "promoted": false,
+      "gameState": "IN_PROGRESS",
+      "soundCues": [
+        "MOVE"
+      ],
+      "moveNumber": 26,
+      "nextPlayer": 2,
+      "turnComplete": true,
+      "animationCues": [
+        "SLIDE"
+      ],
+      "forcedJumpIndex": -1,
+      "animationDurationMs": 200
+    }
+  },
+  {
+    "move_number": 27,
+    "move_data": {
+      "to": "a7",
+      "end": 4,
+      "from": "b8",
+      "king": false,
+      "start": 0,
+      "toCol": 0,
+      "toRow": 1,
+      "player": 2,
+      "capture": false,
+      "fromCol": 1,
+      "fromRow": 0,
+      "version": 1,
+      "wasKing": false,
+      "captured": [],
+      "notation": "b8-a7",
+      "promoted": false,
+      "gameState": "IN_PROGRESS",
+      "soundCues": [
+        "MOVE"
+      ],
+      "moveNumber": 27,
+      "nextPlayer": 1,
+      "turnComplete": true,
+      "animationCues": [
+        "SLIDE"
+      ],
+      "forcedJumpIndex": -1,
+      "animationDurationMs": 200
+    }
+  },
+  {
+    "move_number": 28,
+    "move_data": {
+      "to": "e5",
+      "end": 14,
+      "from": "f4",
+      "king": false,
+      "start": 18,
+      "toCol": 4,
+      "toRow": 3,
+      "player": 1,
+      "capture": false,
+      "fromCol": 5,
+      "fromRow": 4,
+      "version": 1,
+      "wasKing": false,
+      "captured": [],
+      "notation": "f4-e5",
+      "promoted": false,
+      "gameState": "IN_PROGRESS",
+      "soundCues": [
+        "MOVE"
+      ],
+      "moveNumber": 28,
+      "nextPlayer": 2,
+      "turnComplete": true,
+      "animationCues": [
+        "SLIDE"
+      ],
+      "forcedJumpIndex": -1,
+      "animationDurationMs": 200
+    }
+  },
+  {
+    "move_number": 29,
+    "move_data": {
+      "to": "f4",
+      "end": 18,
+      "from": "d6",
+      "king": false,
+      "start": 9,
+      "toCol": 5,
+      "toRow": 4,
+      "player": 2,
+      "capture": true,
+      "fromCol": 3,
+      "fromRow": 2,
+      "version": 1,
+      "wasKing": false,
+      "captured": [
+        "e5"
+      ],
+      "notation": "d6xf4",
+      "promoted": false,
+      "gameState": "IN_PROGRESS",
+      "soundCues": [
+        "CAPTURE"
+      ],
+      "moveNumber": 29,
+      "nextPlayer": 2,
+      "turnComplete": false,
+      "animationCues": [
+        "JUMP"
+      ],
+      "forcedJumpIndex": 18,
+      "animationDurationMs": 350
+    }
+  },
+  {
+    "move_number": 30,
+    "move_data": {
+      "to": "h2",
+      "end": 27,
+      "from": "f4",
+      "king": false,
+      "start": 18,
+      "toCol": 7,
+      "toRow": 6,
+      "player": 2,
+      "capture": true,
+      "fromCol": 5,
+      "fromRow": 4,
+      "version": 1,
+      "wasKing": false,
+      "captured": [
+        "g3"
+      ],
+      "notation": "f4xh2",
+      "promoted": false,
+      "gameState": "IN_PROGRESS",
+      "soundCues": [
+        "CAPTURE"
+      ],
+      "moveNumber": 30,
+      "nextPlayer": 1,
+      "turnComplete": true,
+      "animationCues": [
+        "JUMP"
+      ],
+      "forcedJumpIndex": -1,
+      "animationDurationMs": 350
+    }
+  }
+]
