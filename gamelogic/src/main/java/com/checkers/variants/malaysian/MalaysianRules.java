@@ -12,15 +12,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
-/**
- * Malaysian/Singaporean draughts (Dam/Dum), using the common 12x12 ruleset:
- * forward-only men, flying kings, mandatory maximum capture sequences, and
- * deferred capture removal. A quiet move when a capture is available is allowed
- * as a huffing action and forfeits one piece that had a capture available.
- *
- * Regional house rules exist; this implementation does not include the Penang
- * king-capture tie-break variant.
- */
+
 public final class MalaysianRules implements GameRules {
     private static final int[][] DIAGONALS = {
             {-1, -1}, {-1, 1}, {1, -1}, {1, 1}
@@ -30,22 +22,30 @@ public final class MalaysianRules implements GameRules {
             "MALAYSIAN", 12, 5, 30,
             GameConfig.SquareLayout.DARK_SQUARES_ONLY, true);
 
-    @Override public String getVariantId() { return "MALAYSIAN"; }
-    @Override public String getDisplayName() { return "Malaysian Checkers"; }
-    @Override public GameConfig getConfig() { return config; }
+    @Override public String getVariantId() { 
+        return "MALAYSIAN"; 
+    }
+    @Override public String getDisplayName() { 
+        return "Malaysian Checkers"; 
+    }
+    @Override public GameConfig getConfig() { 
+        return config; 
+    }
 
     @Override
     public void initializeBoard(Board board) {
         if (board == null || !getVariantId().equals(board.getConfig().getVariantId())) {
-            throw new IllegalArgumentException("MalaysianRules requires a MALAYSIAN board");
+            throw new IllegalArgumentException("Wrong board");
         }
         board.reset();
     }
 
     @Override
     public List<TurnMove> getLegalTurns(Board board, int player) {
+        //checks for invalid board or player
         validateBoardAndPlayer(board, player);
         List<TurnMove> captures = generateAllCaptures(board, player);
+        //if capture possible - check for max
         if (!captures.isEmpty()) {
             int maxCaptured = captures.stream()
                     .mapToInt(turn -> (int) turn.getCapturedCount())
@@ -54,16 +54,17 @@ public final class MalaysianRules implements GameRules {
                     .filter(turn -> turn.getCapturedCount() == maxCaptured)
                     .toList();
 
-            // Malaysian huffing: a player may decline a capture by making a quiet
-            // move, but must then forfeit a piece that had a capture available.
+           
             List<TurnMove> result = new ArrayList<>(maximumCaptures);
+            //if move != max then forfeit piece
             result.addAll(generateQuietTurns(board, player));
             return List.copyOf(result);
         }
         return generateQuietTurns(board, player);
     }
 
-    /** Returns the first capture-capable piece in deterministic board-index order. */
+    
+    //finds which piece to remove when forfeiting - by board order
     @Override
     public int getPieceToForfeitWhenCaptureDeclined(Board board, int player) {
         return generateAllCaptures(board, player).stream()
@@ -73,6 +74,7 @@ public final class MalaysianRules implements GameRules {
     }
 
     @Override
+    //finds which piece to remove when forfeiting - by first choice selected
     public int getPieceToForfeitWhenCaptureDeclined(Board board, int player, int attemptedStart) {
         boolean attemptedPieceCanCapture = generateAllCaptures(board, player).stream()
                 .anyMatch(turn -> turn.getStartIndex() == attemptedStart);
@@ -81,6 +83,7 @@ public final class MalaysianRules implements GameRules {
                 : getPieceToForfeitWhenCaptureDeclined(board, player);
     }
 
+    //goes through board to find any possible capture
     private List<TurnMove> generateAllCaptures(Board board, int player) {
         List<TurnMove> captures = new ArrayList<>();
         for (int start = 0; start < board.getCellCount(); start++) {
@@ -90,6 +93,7 @@ public final class MalaysianRules implements GameRules {
         return captures;
     }
 
+    //determines if a move would be a capture
     private void findCaptures(
             Board position,
             int current,
@@ -109,12 +113,13 @@ public final class MalaysianRules implements GameRules {
             return;
         }
 
+        //recursion to find all captures of a piece
         for (CaptureOption option : options) {
             Board next = position.copy();
             Piece nextPiece = next.getPiece(current);
             next.setPiece(option.landingIndex(), nextPiece);
             next.removePiece(current);
-            // Captured pieces intentionally remain on the board until the turn ends.
+            //pieces don't disappear until the end of the turn
             List<MoveStep> nextPath = new ArrayList<>(path);
             nextPath.add(new MoveStep(current, option.landingIndex(), option.capturedIndex()));
             Set<Integer> nextCaptured = new HashSet<>(capturedIndices);
@@ -123,6 +128,7 @@ public final class MalaysianRules implements GameRules {
         }
     }
 
+    //checks possible capture 
     private List<CaptureOption> getCaptureOptions(
             Board board,
             int current,
@@ -133,6 +139,7 @@ public final class MalaysianRules implements GameRules {
         int row = board.rowOf(current);
         int col = board.colOf(current);
 
+        //if not king, just checks each forward move
         if (!piece.isKing()) {
             for (int[] d : DIAGONALS) {
                 if (!isForward(piece, d[0])) continue;
@@ -150,9 +157,7 @@ public final class MalaysianRules implements GameRules {
             return options;
         }
 
-        // Flying king: locate the first occupied square on each diagonal. If it
-        // is an uncaptured enemy, every empty landing square beyond it is legal
-        // until the next occupied square.
+        // if king - malaysian rules has flying kings, can go as far as wants diagonally and jump if empty cell behind
         for (int[] d : DIAGONALS) {
             int scanRow = row + d[0];
             int scanCol = col + d[1];
@@ -175,6 +180,7 @@ public final class MalaysianRules implements GameRules {
         return options;
     }
 
+    //generates possible non-capture moves - if there is a capture available - this will lead to a forfeited piece
     private List<TurnMove> generateQuietTurns(Board board, int player) {
         List<TurnMove> turns = new ArrayList<>();
         for (int start = 0; start < board.getCellCount(); start++) {
@@ -201,6 +207,7 @@ public final class MalaysianRules implements GameRules {
     }
 
     @Override
+    //applies a move, allows for multicapture
     public void applyStep(Board board, MoveStep step, int player, boolean finalStep) {
         Piece piece = board.getPiece(step.startIndex());
         if (piece == null || piece.isEmpty() || !belongsTo(piece, player)) {
@@ -211,16 +218,18 @@ public final class MalaysianRules implements GameRules {
         }
         board.setPiece(step.endIndex(), piece);
         board.removePiece(step.startIndex());
-        // Do not remove captured pieces here; Malaysian rules defer removal.
+        // wait on removing piece
         if (finalStep) promoteIfNeeded(board, step.endIndex(), player, true);
     }
 
     @Override
+    //turn end - pieces are now removed
     public void finishTurn(Board board, List<Integer> capturedIndices, int player) {
         for (int capturedIndex : capturedIndices) board.removePiece(capturedIndex);
     }
 
     @Override
+    //turn finished, king is now promoted
     public void promoteIfNeeded(Board board, int index, int player, boolean finalStep) {
         if (!finalStep) return;
         Piece piece = board.getPiece(index);
@@ -232,13 +241,19 @@ public final class MalaysianRules implements GameRules {
         }
     }
 
-    @Override public boolean requiresMaximumCapture() { return true; }
-    @Override public boolean forfeitsPieceWhenCaptureDeclined() { return true; }
-    @Override public int getDrawTurnLimit() { return -1; }
+    @Override public boolean requiresMaximumCapture() { 
+        return true; 
+    }
+    @Override public boolean forfeitsPieceWhenCaptureDeclined() { 
+        return true; 
+    }
+    @Override public int getDrawTurnLimit() {
+        return -1; 
+    }
 
     private void validateBoardAndPlayer(Board board, int player) {
         if (board == null || !getVariantId().equals(board.getConfig().getVariantId())) {
-            throw new IllegalArgumentException("MalaysianRules requires a MALAYSIAN board");
+            throw new IllegalArgumentException("Wrong Board");
         }
         if (player != Piece.red && player != Piece.black) {
             throw new IllegalArgumentException("Unknown player: " + player);

@@ -50,9 +50,7 @@ public class VariantSelectionController {
                         + "deferred capture removal, and huffing.",
                 "MALAYSIAN");
 
-        Label note = new Label(
-                "Malaysian rules use the implementation currently "
-                        + "configured in this project.");
+        
         note.setWrapText(true);
         note.setMaxWidth(420);
         note.setStyle("-fx-text-fill: #666666;");
