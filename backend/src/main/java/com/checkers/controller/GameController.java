@@ -34,7 +34,10 @@ public class GameController {
 
     @PostMapping
     // creates a new game with the specified visibility
-    public ResponseEntity<?> createGame(@RequestParam GameVisibility visibility) {
+    public ResponseEntity<?> createGame(
+        @RequestParam GameVisibility visibility, 
+        @RequestParam (defaultValue = "AMERICAN") String variantId) {
+
 
     String gameId = UUID.randomUUID()
             .toString()
@@ -67,7 +70,8 @@ public class GameController {
             gameId,
             databaseGameId,
             visibility,
-            joinCode
+            joinCode,
+            variantId
     );
 
     if (joinCode != null) {

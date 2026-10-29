@@ -1,17 +1,21 @@
+
 package com.checkers.controller;
 
-import javafx.scene.control.Alert;
-import java.util.Collections;
-import java.util.List;
 import com.checkers.Main;
 import com.checkers.logic.Board;
 import com.checkers.logic.GameLogic;
+import com.checkers.rules.GameRules;
 import com.checkers.logic.Piece;
-import com.checkers.logic.GameConfig;
+import com.checkers.websocket.GameWebSocketClient;
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.node.ObjectNode;
 
+import javafx.application.Platform;
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
 import javafx.scene.Scene;
+import javafx.scene.control.Alert;
 import javafx.scene.control.Button;
 import javafx.scene.control.Label;
 import javafx.scene.layout.BorderPane;
@@ -23,192 +27,205 @@ import javafx.scene.paint.Color;
 import javafx.scene.shape.Circle;
 import javafx.scene.shape.Rectangle;
 
-import com.checkers.websocket.GameWebSocketClient;
-import com.fasterxml.jackson.databind.JsonNode;
-import javafx.application.Platform;
-import com.fasterxml.jackson.databind.ObjectMapper;
+import java.util.Collections;
+import java.util.List;
 
 public class GameBoardController {
+
     private boolean onlineMode = false;
     private boolean awaitingServerMove = false;
+
     private String onlineGameId;
     private int onlinePlayerNumber;
     private GameWebSocketClient webSocketClient;
+
     private final ObjectMapper objectMapper = new ObjectMapper();
 
-    private static final int BOARD_SIZE = GameConfig.BOARD_SIZE;
-    private static final double SQUARE_SIZE = GameConfig.SQUARE_SIZE;
+    private static final double SQUARE_SIZE = GameStyleConfig.SQUARE_SIZE;
 
     private GameLogic gameLogic;
     private BorderPane root;
     private GridPane board;
     private Label gameStatus;
+
     private int selectedIndex = -1;
 
-    // Stores the squares where the selected piece is allowed to move.
     private List<Integer> legalDestinations = Collections.emptyList();
 
-    // Prevents the game-over message from appearing more than once.
     private boolean gameOverMessageShown = false;
 
-    public Scene createScene() {
+    public GameBoardController() {
+        this(new GameLogic());
+    }
 
-        gameLogic = new GameLogic();
+    public GameBoardController(GameLogic gameLogic) {
+        if (gameLogic == null) {
+            throw new IllegalArgumentException(
+                    "GameLogic cannot be null.");
+        }
+
+        this.gameLogic = gameLogic;
+    }
+
+    public Scene createScene() {
+        onlineMode = false;
+        awaitingServerMove = false;
 
         Label title = new Label("Neapolitan Checkers");
         title.setStyle(
                 "-fx-font-size: 28px;" +
-                        "-fx-font-weight: bold;");
+                "-fx-font-weight: bold;"
+        );
 
         gameStatus = new Label();
-        gameStatus.setStyle("-fx-font-size: 16px");
-
-        updateGameStatus();
+        gameStatus.setStyle("-fx-font-size: 16px;");
 
         board = createBoard();
         board.setAlignment(Pos.CENTER);
+
+        updateGameStatus();
 
         Button newGameButton = new Button("New Game");
         Button backButton = new Button("Back to Menu");
 
         newGameButton.setOnAction(event -> {
-            gameLogic = new GameLogic();
+            gameLogic = new GameLogic(gameLogic.getRules());
+
             selectedIndex = -1;
             legalDestinations = Collections.emptyList();
             gameOverMessageShown = false;
+            awaitingServerMove = false;
+
             refreshBoard();
             updateGameStatus();
         });
 
-        backButton.setOnAction(event -> {
-            Main.showMainMenu();
-        });
+        backButton.setOnAction(event -> Main.showMainMenu());
 
-        HBox buttons = new HBox(
-                15,
-                newGameButton,
-                backButton);
-
+        HBox buttons = new HBox(15, newGameButton, backButton);
         buttons.setAlignment(Pos.CENTER);
 
-        VBox topSection = new VBox(
-                10,
-                title,
-                gameStatus);
-
+        VBox topSection = new VBox(10, title, gameStatus);
         topSection.setAlignment(Pos.CENTER);
 
         root = new BorderPane();
-
         root.setPadding(new Insets(25));
         root.setTop(topSection);
         root.setCenter(board);
         root.setBottom(buttons);
 
-        BorderPane.setMargin(
-                board,
-                new Insets(20, 0, 20, 0));
+        BorderPane.setMargin(board, new Insets(20, 0, 20, 0));
 
         return new Scene(root);
     }
 
+    private int getBoardSize() {
+        return gameLogic.getBoard().getBoardSize();
+    }
+
+    private Board getCurrentBoard() {
+        return gameLogic.getBoard();
+    }
+
     private GridPane createBoard() {
+        GridPane grid = new GridPane();
 
-        GridPane board = new GridPane();
+        int size = getBoardSize();
 
-        for (int row = 0; row < BOARD_SIZE; row++) {
-
-            for (int column = 0; column < BOARD_SIZE; column++) {
-
-                StackPane square = createSquare(row, column);
-
-                board.add(square, column, row);
+        for (int row = 0; row < size; row++) {
+            for (int col = 0; col < size; col++) {
+                StackPane square = createSquare(row, col);
+                grid.add(square, col, row);
             }
         }
 
-        return board;
+        return grid;
     }
 
-    private StackPane createSquare(
-            int row,
-            int column) {
-
+    private StackPane createSquare(int row, int col) {
         StackPane square = new StackPane();
+
+        square.setMinSize(SQUARE_SIZE, SQUARE_SIZE);
+        square.setPrefSize(SQUARE_SIZE, SQUARE_SIZE);
+        square.setMaxSize(SQUARE_SIZE, SQUARE_SIZE);
 
         Rectangle background = new Rectangle(
                 SQUARE_SIZE,
-                SQUARE_SIZE);
+                SQUARE_SIZE
+        );
 
-        boolean darkSquare = (row + column) % 2 != 0;
+        background.setStrokeType(
+                javafx.scene.shape.StrokeType.INSIDE
+        );
 
-        if (darkSquare) {
-            background.setFill(
-                    GameConfig.DARK_SQUARE_COLOR 
-            );
-        } else {
-            background.setFill(
-                    GameConfig.LIGHT_SQUARE_COLOR
-            );
-        }
+
+        boolean darkSquare = getCurrentBoard()
+                .getConfig()
+                .isPlayableSquare(row, col);
+
+        background.setFill(
+                darkSquare
+                        ? GameStyleConfig.DARK_SQUARE_COLOR
+                        : GameStyleConfig.LIGHT_SQUARE_COLOR
+        );
 
         square.getChildren().add(background);
 
-        int index = Board.toIndex(row, column);
+        // IMPORTANT: use the current Board's coordinate mapping.
+        // Do not use the legacy static Board.toIndex(row, col).
+        int index = getCurrentBoard().indexAt(row, col);
 
-        if (index != -1) {
-            // Gold marks the selected piece. Green marks legal destinations.
-            if (index == selectedIndex) {
-                background.setStroke(Color.GOLD);
-                background.setStrokeWidth(3);
-            } else if (legalDestinations.contains(index)) {
-                background.setFill(Color.DARKSEAGREEN);
-                background.setStroke(Color.LIMEGREEN);
-                background.setStrokeWidth(3);
-            }
-
-            Piece piece = gameLogic.getBoard().getPiece(index);
-
-            if (piece !=null && !piece.isEmpty()) {
-                Color pieceColor =
-                        piece.isBlack()
-                                ? GameConfig.BLACK_PIECE_COLOR
-                                : GameConfig.RED_PIECE_COLOR;
-
-                Circle pieceCircle = createPiece(piece);
-
-                square.getChildren().add(pieceCircle);
-            } else if (legalDestinations.contains(index)) {
-                // Shows a marker on an empty square where the piece can move.
-                Circle moveMarker = new Circle(9, Color.LIMEGREEN);
-                moveMarker.setOpacity(0.85);
-                square.getChildren().add(moveMarker);
-            }
-
-    final int finalIndex = index;
-            square.setOnMouseClicked(event -> {
-                handleSquareClick(finalIndex);
-            });
+        if (index < 0) {
+            return square;
         }
+
+        if (index == selectedIndex) {
+            background.setStroke(Color.GOLD);
+            background.setStrokeWidth(3);
+        } else if (legalDestinations.contains(index)) {
+            background.setFill(Color.DARKSEAGREEN);
+            background.setStroke(Color.LIMEGREEN);
+            background.setStrokeWidth(3);
+        }
+
+        Piece piece = getCurrentBoard().getPiece(index);
+
+        if (piece != null && !piece.isEmpty()) {
+            Circle pieceCircle = createPiece(piece);
+
+            if (pieceCircle != null) {
+                square.getChildren().add(pieceCircle);
+            }
+        } else if (legalDestinations.contains(index)) {
+            Circle moveMarker = new Circle(9, Color.LIMEGREEN);
+            moveMarker.setOpacity(0.85);
+            square.getChildren().add(moveMarker);
+        }
+
+        square.setOnMouseClicked(event -> handleSquareClick(index));
 
         return square;
     }
 
     private Circle createPiece(Piece piece) {
-
         Color color;
 
         if (piece.isBlack()) {
-            color = GameConfig.BLACK_PIECE_COLOR;
+            color = GameStyleConfig.BLACK_PIECE_COLOR;
         } else if (piece.isRed()) {
-            color = GameConfig.RED_PIECE_COLOR;
+            color = GameStyleConfig.RED_PIECE_COLOR;
         } else {
             return null;
         }
 
-        Circle circle = new Circle(23);
+        Circle circle = new Circle(SQUARE_SIZE * 0.35);
+
+        circle.setStrokeType(
+                javafx.scene.shape.StrokeType.INSIDE
+        );
 
         circle.setFill(color);
-        circle.setStroke(GameConfig.PIECE_OUTLINE_COLOR);
+        circle.setStroke(GameStyleConfig.PIECE_OUTLINE_COLOR);
         circle.setStrokeWidth(2);
 
         if (piece.isKing()) {
@@ -220,116 +237,128 @@ public class GameBoardController {
     }
 
     private void handleSquareClick(int clickedIndex) {
-        // Do not allow more moves after the game has ended.
         if (gameLogic.isGameOver()) {
             showGameOverMessage();
             return;
         }
 
-        if (selectedIndex == -1) {
+        if (onlineMode && awaitingServerMove) {
+            return;
+        }
 
+        if (selectedIndex == -1) {
             if (onlineMode && !isLocalPlayersPiece(clickedIndex)) {
-                System.out.println("Cannot select opponent's piece. "
-                        + "Online player: " + onlinePlayerNumber);
+                gameStatus.setText("Select one of your own pieces.");
                 return;
             }
 
             if (gameLogic.isCurrentPlayerPiece(clickedIndex)) {
-
-                // Gets every legal destination for the selected piece.
-                List<Integer> destinations = gameLogic.getLegalDestinations(clickedIndex);
+                List<Integer> destinations =
+                        gameLogic.getLegalDestinations(clickedIndex);
 
                 if (destinations.isEmpty()) {
-                    // If any jump exists, the player must select a piece that can jump.
                     gameStatus.setText(
                             gameLogic.hasAnyJump(gameLogic.getCurrentPlayer())
                                     ? "A jump is available. Select a piece that can jump."
-                                    : "That piece has no legal moves.");
+                                    : "That piece has no legal moves."
+                    );
                 } else {
                     selectedIndex = clickedIndex;
                     legalDestinations = destinations;
                     gameStatus.setText("Choose a highlighted destination.");
                     refreshBoard();
                 }
-
             } else {
-
-                gameStatus.setText(
-                        "Select one of your pieces.");
+                gameStatus.setText("Select one of your pieces.");
             }
 
             return;
         }
 
-        if (selectedIndex != -1 && selectedIndex != clickedIndex) {
+        if (selectedIndex == clickedIndex) {
+            selectedIndex = -1;
+            legalDestinations = Collections.emptyList();
+            refreshBoard();
+            updateGameStatus();
+            return;
+        }
 
-            if (onlineMode) {
-                // Converts the playable-square indexes into board rows and columns.
-                int fromRow = Board.getRow(selectedIndex);
-                int fromCol = Board.getCol(selectedIndex);
-                int toRow = Board.getRow(clickedIndex);
-                int toCol = Board.getCol(clickedIndex);
+        if (onlineMode) {
+            Board currentBoard = getCurrentBoard();
 
-                System.out.println(
-                        "Destination selected: from=" + selectedIndex
-                                + ", to=" + clickedIndex
-                                + ", player=" + onlinePlayerNumber
-                                + ", awaitingServerMove=" + awaitingServerMove);
+            int fromRow = currentBoard.rowOf(selectedIndex);
+            int fromCol = currentBoard.colOf(selectedIndex);
+            int toRow = currentBoard.rowOf(clickedIndex);
+            int toCol = currentBoard.colOf(clickedIndex);
 
-                requestMove(fromRow, fromCol, toRow, toCol);
+            if (fromRow < 0 || fromCol < 0 || toRow < 0 || toCol < 0) {
+                gameStatus.setText("Invalid square selected.");
                 return;
             }
 
-            if (gameLogic.move(selectedIndex, clickedIndex)) {
-                // Keeps the same piece selected when another jump is required.
-                updateSelectionAfterMove();
-
-                refreshBoard();
-                updateGameStatus();
-                showGameOverMessage();
-
-            } else {
-                if (gameLogic.isCurrentPlayerPiece(clickedIndex)) {
-
-                    // Allows the player to select a different movable piece.
-                    List<Integer> destinations = gameLogic.getLegalDestinations(clickedIndex);
+            if (!legalDestinations.contains(clickedIndex)) {
+                if (gameLogic.isCurrentPlayerPiece(clickedIndex)
+                        && isLocalPlayersPiece(clickedIndex)) {
+                    List<Integer> destinations =
+                            gameLogic.getLegalDestinations(clickedIndex);
 
                     if (!destinations.isEmpty()) {
                         selectedIndex = clickedIndex;
                         legalDestinations = destinations;
-                        gameStatus.setText("Choose a highlighted destination.");
                         refreshBoard();
-                    } else {
-                        gameStatus.setText("That piece has no legal moves.");
+                        gameStatus.setText("Choose a highlighted destination.");
                     }
-
                 } else {
-                    gameStatus.setText(
-                            "Invalid move. Try again.");
+                    gameStatus.setText("Choose a highlighted destination.");
                 }
+
+                return;
             }
 
+            requestMove(fromRow, fromCol, toRow, toCol);
             return;
         }
 
+        if (gameLogic.move(selectedIndex, clickedIndex)) {
+            updateSelectionAfterMove();
+            refreshBoard();
+            updateGameStatus();
+            showGameOverMessage();
+            return;
+        }
+
+        if (gameLogic.isCurrentPlayerPiece(clickedIndex)) {
+            List<Integer> destinations =
+                    gameLogic.getLegalDestinations(clickedIndex);
+
+            if (!destinations.isEmpty()) {
+                selectedIndex = clickedIndex;
+                legalDestinations = destinations;
+                gameStatus.setText("Choose a highlighted destination.");
+                refreshBoard();
+            } else {
+                gameStatus.setText("That piece has no legal moves.");
+            }
+        } else {
+            gameStatus.setText("Invalid move. Try again.");
+        }
     }
 
     private void refreshBoard() {
+        if (root == null) {
+            return;
+        }
 
-        GridPane newBoard = createBoard();
-
-        newBoard.setAlignment(Pos.CENTER);
-
-        board = newBoard;
-
+        board = createBoard();
+        board.setAlignment(Pos.CENTER);
         root.setCenter(board);
     }
 
-    // Keeps the jumping piece selected until every required jump is complete.
     private void updateSelectionAfterMove() {
         if (gameLogic.isMultiJumpInProgress()) {
             selectedIndex = gameLogic.getForcedJumpIndex();
-            legalDestinations = gameLogic.getLegalDestinations(selectedIndex);
+            legalDestinations =
+                    gameLogic.getLegalDestinations(selectedIndex);
         } else {
             selectedIndex = -1;
             legalDestinations = Collections.emptyList();
@@ -337,16 +366,17 @@ public class GameBoardController {
     }
 
     private void updateGameStatus() {
-        // Shows the final result when the game ends.
+        if (gameStatus == null || gameLogic == null) {
+            return;
+        }
+
         if (gameLogic.isGameOver()) {
             gameStatus.setText(gameLogic.getGameResultMessage());
             return;
         }
 
-        // The same player must continue when another jump is available.
         if (gameLogic.isMultiJumpInProgress()) {
-            gameStatus.setText(
-                    "Jump again with the highlighted piece.");
+            gameStatus.setText("Jump again with the highlighted piece.");
             return;
         }
 
@@ -357,7 +387,6 @@ public class GameBoardController {
         }
     }
 
-    // Displays the final result only once when the game ends.
     private void showGameOverMessage() {
         if (!gameLogic.isGameOver() || gameOverMessageShown) {
             return;
@@ -375,39 +404,39 @@ public class GameBoardController {
     public void configureOnlineGame(
             String gameId,
             int playerNumber,
-            GameWebSocketClient client) {
+            GameWebSocketClient client
+    ) {
+        onlineMode = true;
+        onlineGameId = gameId;
+        onlinePlayerNumber = playerNumber;
+        webSocketClient = client;
 
-        this.onlineMode = true;
-        this.onlineGameId = gameId;
-        this.onlinePlayerNumber = playerNumber;
-        this.webSocketClient = client;
+        awaitingServerMove = false;
+        selectedIndex = -1;
+        legalDestinations = Collections.emptyList();
     }
 
     private boolean isLocalPlayersPiece(int index) {
-        Piece piece = gameLogic.getBoard().getPiece(index);
+        Piece piece = getCurrentBoard().getPiece(index);
 
-        if (piece == null) {
+        if (piece == null || piece.isEmpty()) {
             return false;
         }
 
         if (onlinePlayerNumber == 1) {
             return piece.isRed();
-        } else if (onlinePlayerNumber == 2) {
+        }
+
+        if (onlinePlayerNumber == 2) {
             return piece.isBlack();
         }
 
         return false;
     }
 
-    private int messagePlayerFromOuter(JsonNode outerMessage, int fallback) {
-        return outerMessage.path("player").asInt(fallback);
-    }
-
     public void handleServerMessage(JsonNode message) {
         try {
             String type = message.path("type").asText("");
-
-            // The server wraps the original MOVE message inside GAME_MESSAGE.
 
             if ("GAME_MESSAGE".equals(type)) {
                 int senderPlayer = message.path("player").asInt(-1);
@@ -418,14 +447,14 @@ public class GameBoardController {
                 } else if (payload.isObject()) {
                     message = payload;
                 } else {
-                    System.err.println("GAME_MESSAGE has an invalid payload: "
-                            + payload);
+                    System.err.println(
+                            "GAME_MESSAGE has an invalid payload: " + payload
+                    );
                     return;
                 }
 
-                if (message.isObject()) {
-                    ((com.fasterxml.jackson.databind.node.ObjectNode) message)
-                            .put("player", senderPlayer);
+                if (message instanceof ObjectNode objectNode) {
+                    objectNode.put("player", senderPlayer);
                 }
 
                 type = message.path("type").asText("");
@@ -435,31 +464,35 @@ public class GameBoardController {
 
             switch (type) {
                 case "CONNECTED" ->
-                    System.out.println("CONNECTED received: " + message);
+                        System.out.println("CONNECTED received: " + message);
 
                 case "GAME_STARTED" ->
-                    System.out.println("Game started.");
+                        System.out.println("Game started.");
 
                 case "PLAYER_JOINED" ->
-                    System.out.println("Player joined: " + message);
+                        System.out.println("Player joined: " + message);
 
                 case "MOVE" ->
-                    handleOnlineMove(message);
+                        handleOnlineMove(message);
 
                 case "PLAYER_LEFT" ->
-                    System.out.println("Player left: " + message);
+                        System.out.println("Player left: " + message);
 
                 case "ERROR" -> {
                     awaitingServerMove = false;
                     System.err.println("Server error: " + message);
+                    Platform.runLater(() ->
+                            gameStatus.setText("Server rejected the move.")
+                    );
                 }
 
                 default ->
-                    System.out.println("Unhandled server message: " + message);
+                        System.out.println("Unhandled server message: " + message);
             }
         } catch (Exception e) {
-            System.err.println("Failed to handle server message: "
-                    + e.getMessage());
+            System.err.println(
+                    "Failed to handle server message: " + e.getMessage()
+            );
             e.printStackTrace();
         }
     }
@@ -467,12 +500,8 @@ public class GameBoardController {
     private void handleOnlineMove(JsonNode message) {
         int movePlayer = message.path("player").asInt(-1);
 
-        System.out.println("Received MOVE from player " + movePlayer
-                + "; local player is " + onlinePlayerNumber);
-
         Platform.runLater(() -> {
             try {
-                // The server may send the move payload as a JSON string.
                 JsonNode moveData = message.path("message");
 
                 if (moveData.isTextual()) {
@@ -484,25 +513,24 @@ public class GameBoardController {
                 int toRow = moveData.path("toRow").asInt(-1);
                 int toCol = moveData.path("toCol").asInt(-1);
 
-                if (fromRow < 0 || fromRow >= 8
-                        || fromCol < 0 || fromCol >= 8
-                        || toRow < 0 || toRow >= 8
-                        || toCol < 0 || toCol >= 8) {
+                Board currentBoard = getCurrentBoard();
+                int size = currentBoard.getBoardSize();
+
+                if (!validCoordinate(fromRow, fromCol, size)
+                        || !validCoordinate(toRow, toCol, size)) {
                     System.err.println("Invalid move coordinates received.");
                     return;
                 }
 
-                boolean isOwnMove = movePlayer == onlinePlayerNumber;
+                int start = currentBoard.indexAt(fromRow, fromCol);
+                int end = currentBoard.indexAt(toRow, toCol);
 
-                System.out.println(isOwnMove
-                        ? "Processing our own echoed move."
-                        : "Processing opponent's move.");
-
-                int start = Board.toIndex(fromRow, fromCol);
-                int end = Board.toIndex(toRow, toCol);
-
-                if (start == -1 || end == -1) {
-                    System.err.println("Server sent invalid or unplayable coordinates.");
+                if (start < 0 || end < 0
+                        || !currentBoard.isPlayableIndex(start)
+                        || !currentBoard.isPlayableIndex(end)) {
+                    System.err.println(
+                            "Server sent invalid or unplayable coordinates."
+                    );
                     return;
                 }
 
@@ -510,46 +538,49 @@ public class GameBoardController {
 
                 if (moved) {
                     selectedIndex = -1;
+                    legalDestinations = Collections.emptyList();
+
                     refreshBoard();
                     updateGameStatus();
+                    showGameOverMessage();
 
                     System.out.println("Online move applied successfully.");
                 } else {
-                    System.err.println("Online move could not be applied.");
+                    System.err.println(
+                            "Online move could not be applied locally."
+                    );
                 }
-
             } catch (Exception e) {
-                System.err.println("Error processing online move: "
-                        + e.getMessage());
+                System.err.println(
+                        "Error processing online move: " + e.getMessage()
+                );
                 e.printStackTrace();
             } finally {
-                // Unlock only after our own move has been acknowledged.
                 if (movePlayer == onlinePlayerNumber) {
                     awaitingServerMove = false;
-                    System.out.println("Own move acknowledged; input unlocked.");
                 }
             }
         });
     }
 
-    private boolean validCoordinate(int row, int col) {
-        return row >= 0 && row < 8 && col >= 0 && col < 8;
+    private boolean validCoordinate(int row, int col, int size) {
+        return row >= 0 && row < size && col >= 0 && col < size;
     }
 
     private void requestMove(
             int fromRow,
             int fromCol,
             int toRow,
-            int toCol) {
-
+            int toCol
+    ) {
         if (!onlineMode) {
-            // Keep your existing local-game move implementation here.
-            int start = Board.toIndex(fromRow, fromCol);
-            int end = Board.toIndex(toRow, toCol);
+            Board currentBoard = getCurrentBoard();
 
-            boolean moved = gameLogic.move(start, end);
+            int start = currentBoard.indexAt(fromRow, fromCol);
+            int end = currentBoard.indexAt(toRow, toCol);
 
-            if (moved) {
+            if (start >= 0 && end >= 0
+                    && gameLogic.move(start, end)) {
                 updateSelectionAfterMove();
                 refreshBoard();
                 updateGameStatus();
@@ -560,27 +591,23 @@ public class GameBoardController {
         }
 
         if (awaitingServerMove) {
-            System.out.println("Move not sent: waiting for server response.");
             return;
         }
 
         if (webSocketClient == null || onlineGameId == null) {
-            System.out.println("Move not sent: WebSocket client or game ID is missing.");
+            gameStatus.setText("WebSocket connection is not configured.");
             return;
         }
 
         awaitingServerMove = true;
-
-        System.out.println(
-                "Sending online move: " + fromRow + "," + fromCol
-                        + " -> " + toRow + "," + toCol);
 
         webSocketClient.sendMove(
                 onlineGameId,
                 fromRow,
                 fromCol,
                 toRow,
-                toCol);
+                toCol
+        );
 
         selectedIndex = -1;
         legalDestinations = Collections.emptyList();

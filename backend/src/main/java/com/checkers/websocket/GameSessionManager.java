@@ -1,5 +1,8 @@
 package com.checkers.websocket;
 
+import com.checkers.logic.GameLogic;
+import com.checkers.variants.GameFactory;
+
 import org.springframework.stereotype.Component;
 import org.springframework.web.socket.TextMessage;
 import org.springframework.web.socket.WebSocketSession;
@@ -54,6 +57,12 @@ public class GameSessionManager {
         );
     }
 
+    private final GameFactory gameFactory;
+
+    public GameSessionManager(GameFactory gameFactory) {
+        this.gameFactory = gameFactory;
+    }
+
     // remove a WebSocket session from the manager
     // removes the session from the sessions map using its ID as the key
     public void removeSession(WebSocketSession session) {
@@ -73,24 +82,33 @@ public class GameSessionManager {
             String gameId,
             long databaseGameId,
             GameVisibility visibility,
-            String joinCode) {
+            String joinCode,
+            String variantId) {
+
+        GameLogic gameLogic = gameFactory.createGame(variantId);
 
         GameRoom room = new GameRoom(
                 gameId,
                 databaseGameId,
                 visibility,
-                joinCode
+                joinCode,
+                variantId,
+                gameLogic
         );
 
-        rooms.put(gameId, room);
+        GameRoom existing = rooms.putIfAbsent(gameId, room);
+
+        if (existing != null) {
+            throw new IllegalStateException(
+                    "A room already exists with ID: " + gameId
+            );
+        }
 
         System.out.println(
-                "Created "
-                        + visibility.name().toLowerCase()
-                        + " game room: "
-                        + gameId
-                        + " | Database ID: "
-                        + databaseGameId
+                "Created " + visibility.name().toLowerCase()
+                        + " game room: " + gameId
+                        + " | Variant: " + variantId
+                        + " | Database ID: " + databaseGameId
         );
 
         return room;

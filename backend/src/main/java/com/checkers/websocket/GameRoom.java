@@ -32,7 +32,8 @@ public class GameRoom {
     private Status status = Status.WAITING;
 
     // Each room keeps its own board and turn state.
-    private GameLogic gameLogic = new GameLogic();
+    private final String variantId;
+    private GameLogic gameLogic;
 
 // Counts moves successfully saved to the database.
     private int savedMoveCount = 0;
@@ -41,11 +42,25 @@ public class GameRoom {
             String gameId,
             long databaseGameId,
             GameVisibility visibility,
-            String joinCode) {
+            String joinCode,
+            String variantId,
+            GameLogic gameLogic) {
+
         this.gameId = gameId;
         this.databaseGameId = databaseGameId;
         this.visibility = visibility;
         this.joinCode = joinCode;
+
+        if (variantId == null || variantId.isBlank()) {
+            throw new IllegalArgumentException(
+                    "A game variant must be specified."
+            );
+        }
+
+        this.variantId = variantId;
+        this.gameLogic = java.util.Objects.requireNonNull(
+                gameLogic, "Game logic cannot be null."
+        );
     }
     // get the ID of the game room
     // returns the game ID as a string
@@ -56,6 +71,10 @@ public class GameRoom {
 
     public long getDatabaseGameId() {
         return databaseGameId;
+    }
+
+    public String getVariantId() {
+        return variantId;
     }
 
     public GameVisibility getVisibility() {

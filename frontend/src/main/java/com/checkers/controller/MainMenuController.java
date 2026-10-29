@@ -43,7 +43,7 @@ public class MainMenuController {
         Button playButton =
                 new Button("Play Locally"); 
         playButton.setOnAction(event -> {
-                Main.showGameBoard();
+                Main.showVariantSelection();
         });
 
         Button playOnlineButton =

@@ -454,7 +454,7 @@ public class GameWebSocketHandler extends TextWebSocketHandler {
 
             Move acceptedMove = new Move(start, end);
 
-            boolean capture = acceptedMove.isJump();
+            boolean capture = acceptedMove.isJump(temporaryGame.getBoard());
             boolean wasKing = currentGame.getBoard()
                     .getPiece(start).isKing();
             boolean king = temporaryGame.getBoard()
@@ -472,7 +472,7 @@ public class GameWebSocketHandler extends TextWebSocketHandler {
             List<String> capturedSquares = new ArrayList<>();
 
             if (capture) {
-                int capturedIndex = acceptedMove.getMiddleSquare();
+                int capturedIndex = acceptedMove.getMiddleSquare(temporaryGame.getBoard());
 
                 capturedSquares.add(
                         "" + (char) ('a' + Board.getCol(capturedIndex))
