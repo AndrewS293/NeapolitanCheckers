@@ -50,13 +50,33 @@ public class VariantSelectionController {
                         + "deferred capture removal, and huffing.",
                 "MALAYSIAN");
 
-        
-        note.setWrapText(true);
-        note.setMaxWidth(420);
-        note.setStyle("-fx-text-fill: #666666;");
+        VBox turkishCard = createVariantCard(
+                "Turkish Checkers",
+                "------",
+                "------",
+                "TURKISH");
+                
+        VBox thaiCard = createVariantCard(
+                "Thai Checkers",
+                "-----",
+                "-----",
+                "THAI");
 
+        VBox internationalCard = createVariantCard(
+                "International Checkers",
+                "-----",
+                "-----",
+                "INTERNATIONAL");
+
+        VBox variantSixCard = createVariantCard(
+                "Ndeye's Checkers",
+                "-----",
+                "-----",
+                "VARIANTSIX");
+
+        
         VBox root = new VBox(
-                20, title, subtitle, americanCard, malaysianCard, note);
+                15, title, subtitle, americanCard, malaysianCard, turkishCard, thaiCard, internationalCard, variantSixCard);
         root.setAlignment(Pos.CENTER);
         root.setPadding(new Insets(30));
         root.setStyle("-fx-background-color: #f4f1e9;");
@@ -89,7 +109,7 @@ public class VariantSelectionController {
 
         Button playButton = new Button("Play " + name);
         playButton.setPrefWidth(200);
-        playButton.setPrefHeight(38);
+        playButton.setPrefHeight(32);
         playButton.setStyle(
                 "-fx-background-color: #394b35;"
                 + "-fx-text-fill: white;"
@@ -104,7 +124,7 @@ public class VariantSelectionController {
         VBox card = new VBox(
                 12, nameLabel, boardLabel, descriptionLabel, playButton);
         card.setAlignment(Pos.CENTER);
-        card.setPadding(new Insets(22));
+        card.setPadding(new Insets(18));
         card.setMaxWidth(480);
         card.setStyle(
                 "-fx-background-color: white;"
