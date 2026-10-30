@@ -54,7 +54,7 @@ public class GameController {
     }
 
     // Create game in Supabase
-    long databaseGameId = GameDAO.createGame(gameId);
+    long databaseGameId = GameDAO.createGame(gameId, variantId);
 
     if (databaseGameId == -1) {
         return ResponseEntity
@@ -63,6 +63,12 @@ public class GameController {
                         "error",
                         "Failed to create game in database"
                 ));
+    }
+
+    if (variantId == null || !sessionManager.isSupportedVariant(variantId)) {
+        return ResponseEntity.badRequest().body(
+                Map.of("error", "Unsupported game variant: " + variantId)
+        );
     }
 
     // Create the WebSocket game room
@@ -81,7 +87,8 @@ public class GameController {
                         "databaseGameId", databaseGameId,
                         "joinCode", room.getJoinCode(),
                         "status", room.getStatus().name(),
-                        "players", room.getPlayerCount()
+                        "players", room.getPlayerCount(),
+                        "variantId", room.getVariantId()
                 )
         );
     }
@@ -91,7 +98,8 @@ public class GameController {
                     "gameId", room.getGameId(),
                     "databaseGameId", databaseGameId,
                     "status", room.getStatus().name(),
-                    "players", room.getPlayerCount()
+                    "players", room.getPlayerCount(),
+                    "variantId", room.getVariantId()
             )
     );
 }
@@ -107,7 +115,9 @@ public class GameController {
                 .map(room -> Map.<String, Object>of(
                         "gameId", room.getGameId(),
                         "status", room.getStatus().name(),
-                        "players", room.getPlayerCount()
+                        "players", room.getPlayerCount(),
+                        "variantId", room.getVariantId()
+                        
                 ))
                 .collect(Collectors.toList());
         return ResponseEntity.ok(games);
@@ -142,7 +152,8 @@ public class GameController {
                 Map.of(
                         "gameId", room.getGameId(),
                         "status", room.getStatus().name(),
-                        "players", room.getPlayerCount()
+                        "players", room.getPlayerCount(),
+                        "variantId", room.getVariantId()
                 )
         );
     }
@@ -170,7 +181,8 @@ public class GameController {
                 Map.of(
                         "gameId", room.getGameId(),
                         "status", room.getStatus().name(),
-                        "players", room.getPlayerCount()
+                        "players", room.getPlayerCount(),
+                        "variantId", room.getVariantId()
                 )
         );
     }
@@ -193,7 +205,8 @@ public class GameController {
                 Map.of(
                         "gameId", room.getGameId(),
                         "status", room.getStatus().name(),
-                        "players", room.getPlayerCount()
+                        "players", room.getPlayerCount(),
+                        "variantId", room.getVariantId()
                 )
         );
     }

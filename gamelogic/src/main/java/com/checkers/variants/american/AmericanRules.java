@@ -10,7 +10,7 @@ import com.checkers.rules.GameRules;
 import java.util.ArrayList;
 import java.util.List;
 
-/** Standard American checkers rules, using configurable row-major board indices. */
+
 public final class AmericanRules implements GameRules {
     private static final int[][] DIRECTIONS = {{-1,-1},{-1,1},{1,-1},{1,1}};
     private final GameConfig config;
@@ -22,15 +22,22 @@ public final class AmericanRules implements GameRules {
 
     public AmericanRules(GameConfig config) {
         if (config == null || !"AMERICAN".equals(config.getVariantId())) {
-            throw new IllegalArgumentException("AmericanRules requires an AMERICAN GameConfig");
+            throw new IllegalArgumentException("Wrong GameCongig");
         }
         this.config = config;
     }
 
-    @Override public String getVariantId() { return "AMERICAN"; }
-    @Override public String getDisplayName() { return "American Checkers"; }
-    @Override public GameConfig getConfig() { return config; }
+    @Override public String getVariantId() { 
+        return "AMERICAN"; 
+    }
+    @Override public String getDisplayName() { 
+        return "American Checkers"; 
+    }
+    @Override public GameConfig getConfig() { 
+        return config; 
+    }
 
+    //get legal moves of each piece
     @Override public List<TurnMove> getLegalTurns(Board board, int player) {
         List<TurnMove> captures = new ArrayList<>();
         for (int start = 0; start < board.getCellCount(); start++) {
@@ -57,6 +64,7 @@ public final class AmericanRules implements GameRules {
         return List.copyOf(moves);
     }
 
+    //loops recursively to find all possible captures of each piece
     private void findCaptures(Board board, int current, int player,
                               List<MoveStep> path, List<TurnMove> output) {
         Piece piece = board.getPiece(current);
@@ -80,7 +88,7 @@ public final class AmericanRules implements GameRules {
             boolean promoted = promote(board, end);
             path.add(new MoveStep(current, end, middle));
 
-            // American rules end the capture turn when a man is crowned.
+            
             if (promoted) {
                 output.add(new TurnMove(path));
             } else {
@@ -96,10 +104,11 @@ public final class AmericanRules implements GameRules {
             board.removePiece(end);
         }
         if (!found && !path.isEmpty()) {
-            // A leaf is normally recorded by its parent; this protects direct leaf calls.
+            
         }
     }
 
+    //make king if at final row
     private boolean promote(Board board, int index) {
         Piece piece = board.getPiece(index);
         if (piece == null || piece.isEmpty() || piece.isKing()) return false;
@@ -125,6 +134,10 @@ public final class AmericanRules implements GameRules {
                 && !belongsTo(target, player);
     }
 
-    @Override public boolean requiresMaximumCapture() { return false; }
-    @Override public boolean forfeitsPieceWhenCaptureDeclined() { return false; }
+    @Override public boolean requiresMaximumCapture() { 
+        return false; 
+    }
+    @Override public boolean forfeitsPieceWhenCaptureDeclined() { 
+        return false; 
+    }
 }

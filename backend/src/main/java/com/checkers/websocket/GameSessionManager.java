@@ -293,6 +293,15 @@ public class GameSessionManager {
         sendToPlayer(player2, message);
     }
 
+    public boolean isSupportedVariant(String variantId) {
+        try {
+            gameFactory.createGame(variantId);
+            return true;
+        } catch (IllegalArgumentException e) {
+            return false;
+        }
+    }
+
     // send a message to a specific player
     // does nothing if the session is null or not open
     private void sendToPlayer(

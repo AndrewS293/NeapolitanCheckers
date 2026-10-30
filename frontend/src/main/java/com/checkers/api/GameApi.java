@@ -23,12 +23,12 @@ public class GameApi {
         this.mapper = new ObjectMapper();
     }
 
-    public JsonNode createGame(String visibility)
-            throws Exception {
+    public JsonNode createGame(String visibility, String variantId)
+        throws Exception {
 
         String url = BASE_URL
-                + "?visibility="
-                + visibility;
+                + "?visibility=" + visibility
+                + "&variantId=" + variantId;
 
         HttpRequest request = HttpRequest.newBuilder()
                 .uri(URI.create(url))
@@ -61,6 +61,10 @@ public class GameApi {
                 .POST(HttpRequest.BodyPublishers.noBody())
                 .header("Accept", "application/json")
                 .build();
+
+        JsonNode response = send(request);
+
+        System.out.println("YOOOO JOIN PUB GAME RESPONSE: " + response);
 
         return send(request);
     }

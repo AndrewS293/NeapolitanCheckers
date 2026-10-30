@@ -7,17 +7,16 @@ import java.net.http.HttpResponse;
 
 public class GameDAO {
 
-        //Creates game within our Supabase PostgreSQL database and returns the game id
-    public static long createGame(String roomCode) {
+    public static long createGame(String roomCode, String variantId) {
 
         try {
             String json = """
                     {
                         "room_code": "%s",
-                        "variant": "CHECKERS",
+                        "variant_id": "%s",
                         "status": "IN_PROGRESS"
                     }
-                    """.formatted(roomCode);
+                    """.formatted(roomCode, variantId);
 
             HttpRequest request = HttpRequest.newBuilder()
                     .uri(URI.create(
@@ -35,29 +34,19 @@ public class GameDAO {
 
             HttpClient client = HttpClient.newHttpClient();
 
-            HttpResponse<String> response =
-                    client.send(
-                            request,
-                            HttpResponse.BodyHandlers.ofString()
-                    );
-
-            System.out.println(
-                    "Create game status: " + response.statusCode()
+            HttpResponse<String> response = client.send(
+                    request,
+                    HttpResponse.BodyHandlers.ofString()
             );
 
-            System.out.println(
-                    "Create game response: " + response.body()
-            );
+            System.out.println("Create game status: " + response.statusCode());
+            System.out.println("Create game response: " + response.body());
 
             if (response.statusCode() != 201) {
                 return -1;
             }
 
-            // Supabase returns something like:
-            // [{"id":2,"room_code":"ABC123", ...}]
-
             String body = response.body();
-
             int idPosition = body.indexOf("\"id\":");
 
             if (idPosition == -1) {
@@ -72,9 +61,7 @@ public class GameDAO {
                 end++;
             }
 
-            return Long.parseLong(
-                    body.substring(start, end)
-            );
+            return Long.parseLong(body.substring(start, end));
 
         } catch (Exception e) {
             e.printStackTrace();
