@@ -4,33 +4,36 @@ FROM eclipse-temurin:21-jdk AS build
 
 WORKDIR /app
 
-# Copy Maven files first so Docker can cache dependencies
+# Copy root Maven configuration
 COPY pom.xml .
-COPY .mvn .mvn
 COPY mvnw .
+COPY .mvn .mvn
 
 RUN chmod +x mvnw
 
-# Download dependencies
-RUN ./mvnw dependency:go-offline -B
+# Copy module POMs so Maven can resolve the multi-module project
+COPY gamelogic/pom.xml gamelogic/pom.xml
+COPY backend/pom.xml backend/pom.xml
+COPY frontend/pom.xml frontend/pom.xml
 
-# Copy source code
-COPY src src
+# Download dependencies and resolve the parent/module relationships
+RUN ./mvnw -pl backend -am dependency:go-offline -B
 
-# Build application
-RUN ./mvnw clean package -DskipTests
+# Copy all project source code
+COPY gamelogic gamelogic
+COPY backend backend
 
+# Build backend and its required modules
+RUN ./mvnw -pl backend -am clean package -DskipTests -B
 
 # Runtime stage
 FROM eclipse-temurin:21-jre
 
 WORKDIR /app
 
-# Copy the built Spring Boot jar
-COPY --from=build /app/target/*.jar app.jar
+# Copy the Spring Boot executable JAR
+COPY --from=build /app/backend/target/*.jar app.jar
 
-# Render provides the PORT environment variable.
-# Spring Boot will be configured to use it.
 EXPOSE 8080
 
 ENTRYPOINT ["java", "-jar", "app.jar"]
