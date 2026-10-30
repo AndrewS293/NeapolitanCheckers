@@ -281,7 +281,13 @@ public class GameLobbyController {
                 });
 
             } catch (Exception e) {
-                showError("Could not create game", e);
+                System.err.println("========== CREATE GAME FAILED ==========");
+                System.err.println("Error: " + e.getMessage());
+                e.printStackTrace();
+
+                Platform.runLater(() ->
+                    showError("Could not create game", e)
+                );
             }
         });
     }

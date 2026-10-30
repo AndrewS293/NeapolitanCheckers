@@ -152,17 +152,14 @@ public class GameApi {
         if (response.statusCode() < 200
                 || response.statusCode() >= 300) {
 
-            JsonNode error = body == null
-                    ? null
-                    : body.get("error");
+                System.err.println("========== API REQUEST FAILED ==========");
+                System.err.println("URL: " + request.uri());
+                System.err.println("HTTP Status: " + response.statusCode());
+                System.err.println("Response Body: " + response.body());
 
-            String message =
-                    error != null
-                            ? error.asText()
-                            : "Game request failed with HTTP "
-                                    + response.statusCode();
-
-            throw new Exception(message);
+                throw new Exception(
+                        "HTTP " + response.statusCode() + ": " + response.body()
+                );
         }
 
         return body;
