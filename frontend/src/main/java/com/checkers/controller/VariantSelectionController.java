@@ -10,6 +10,10 @@ import javafx.geometry.Pos;
 import javafx.scene.Scene;
 import javafx.scene.control.Button;
 import javafx.scene.control.Label;
+import javafx.scene.control.ScrollPane;
+import javafx.scene.layout.ColumnConstraints;
+import javafx.scene.layout.GridPane;
+import javafx.scene.layout.Priority;
 import javafx.scene.layout.VBox;
 import javafx.scene.text.Font;
 import javafx.stage.Stage;
@@ -30,11 +34,13 @@ public class VariantSelectionController {
 
     public void show() {
         Label title = new Label("Choose Your Checkers Variant");
-        title.setFont(Font.font("Arial", 26));
+        title.setFont(Font.font("Georgia", 26));
+        title.setStyle("-fx-text-fill: #173c36;");
 
         Label subtitle = new Label(
                 "Select the ruleset you want to play.");
         subtitle.setFont(Font.font("Arial", 14));
+        subtitle.setStyle("-fx-text-fill: #52635d;");
 
         VBox americanCard = createVariantCard(
                 "American Checkers",
@@ -75,17 +81,56 @@ public class VariantSelectionController {
                 "VARIANTSIX");
 
         
-        VBox root = new VBox(
-                15, title, subtitle, americanCard, malaysianCard, turkishCard, thaiCard, internationalCard, variantSixCard);
-        root.setAlignment(Pos.CENTER);
-        root.setPadding(new Insets(30));
-        root.setStyle("-fx-background-color: #f4f1e9;");
+                GridPane variants = new GridPane();
+                variants.setAlignment(Pos.TOP_CENTER);
+                variants.setHgap(14);
+                variants.setVgap(14);
 
-        Scene scene = new Scene(root, 650, 720);
+                for (int column = 0; column < 2; column++) {
+                        ColumnConstraints constraints = new ColumnConstraints();
+                        constraints.setPercentWidth(50);
+                        constraints.setHgrow(Priority.ALWAYS);
+                        constraints.setFillWidth(true);
+                        variants.getColumnConstraints().add(constraints);
+                }
+
+                VBox[] cards = {
+                        americanCard,
+                        malaysianCard,
+                        turkishCard,
+                        thaiCard,
+                        internationalCard,
+                        variantSixCard
+                };
+
+                for (int index = 0; index < cards.length; index++) {
+                        cards[index].setMaxWidth(Double.MAX_VALUE);
+                        variants.add(cards[index], index % 2, index / 2);
+                }
+
+                ScrollPane options = new ScrollPane(variants);
+                options.setFitToWidth(true);
+                options.setHbarPolicy(ScrollPane.ScrollBarPolicy.NEVER);
+                options.setStyle(
+                                "-fx-background: transparent;"
+                                + "-fx-background-color: transparent;"
+                                + "-fx-padding: 2 4 2 2;");
+                options.setMinHeight(0);
+
+                VBox heading = new VBox(6, title, subtitle);
+                heading.setAlignment(Pos.CENTER_LEFT);
+
+                VBox root = new VBox(18, heading, options);
+                root.setAlignment(Pos.TOP_LEFT);
+                root.setPadding(new Insets(24));
+                root.setStyle("-fx-background-color: #e9eee9;");
+                VBox.setVgrow(options, Priority.ALWAYS);
+
+                Scene scene = new Scene(root, 680, 720);
         stage.setTitle("Neapolitan Checkers - Select Variant");
         stage.setScene(scene);
-        stage.setMinWidth(550);
-        stage.setMinHeight(650);
+                stage.setMinWidth(560);
+                stage.setMinHeight(560);
         stage.show();
     }
 
@@ -96,25 +141,29 @@ public class VariantSelectionController {
             String variantId) {
 
         Label nameLabel = new Label(name);
-        nameLabel.setFont(Font.font("Arial", 20));
+        nameLabel.setFont(Font.font("Georgia", 18));
+        nameLabel.setStyle("-fx-text-fill: #173c36;");
 
         Label boardLabel = new Label(boardInfo);
-        boardLabel.setFont(Font.font("Arial", 14));
-        boardLabel.setStyle("-fx-font-weight: bold;");
+        boardLabel.setFont(Font.font("Arial", 12));
+        boardLabel.setWrapText(true);
+        boardLabel.setStyle(
+                "-fx-font-weight: bold;"
+                + "-fx-text-fill: #a64b3c;");
 
         Label descriptionLabel = new Label(description);
         descriptionLabel.setWrapText(true);
-        descriptionLabel.setMaxWidth(400);
+        descriptionLabel.setMaxWidth(260);
         descriptionLabel.setAlignment(Pos.CENTER);
 
         Button playButton = new Button("Play " + name);
-        playButton.setPrefWidth(200);
+        playButton.setMaxWidth(Double.MAX_VALUE);
         playButton.setPrefHeight(32);
         playButton.setStyle(
-                "-fx-background-color: #394b35;"
+                "-fx-background-color: #245c50;"
                 + "-fx-text-fill: white;"
                 + "-fx-font-size: 14px;"
-                + "-fx-background-radius: 6px;");
+                + "-fx-background-radius: 5px;");
 
         playButton.setOnAction(event -> {
             // The factory creates GameLogic with the selected rules.
@@ -122,15 +171,15 @@ public class VariantSelectionController {
         });
 
         VBox card = new VBox(
-                12, nameLabel, boardLabel, descriptionLabel, playButton);
+                8, nameLabel, boardLabel, descriptionLabel, playButton);
         card.setAlignment(Pos.CENTER);
-        card.setPadding(new Insets(18));
-        card.setMaxWidth(480);
+        card.setPadding(new Insets(14));
+        card.setMaxWidth(Double.MAX_VALUE);
         card.setStyle(
-                "-fx-background-color: white;"
-                + "-fx-background-radius: 10px;"
-                + "-fx-border-color: #d5d0c5;"
-                + "-fx-border-radius: 10px;");
+                "-fx-background-color: #ffffff;"
+                + "-fx-background-radius: 6px;"
+                + "-fx-border-color: #cbd6ce;"
+                + "-fx-border-radius: 6px;");
 
         return card;
     }
