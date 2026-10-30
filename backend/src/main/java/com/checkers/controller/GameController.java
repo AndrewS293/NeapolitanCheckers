@@ -126,7 +126,7 @@ public class GameController {
     // Endpoint to join a public game by gameId
     @PostMapping("/{gameId}/join")
     // joins a public game by its game ID
-    public ResponseEntity<?> joinPublicGame(@PathVariable String gameId) {
+    public ResponseEntity<?> joinPublicGame(@PathVariable("gameId") String gameId) {
 
         GameRoom room = sessionManager.getRoom(gameId);
 
@@ -161,7 +161,7 @@ public class GameController {
     // Endpoint to join a private game by joinCode
     @PostMapping ("/join/{joinCode}")
     // joins a private game by its join code
-    public ResponseEntity<?> joinPrivateGame(@PathVariable String joinCode) {
+    public ResponseEntity<?> joinPrivateGame(@PathVariable("joinCode") String joinCode) {
 
         GameRoom room = sessionManager.getRoomByJoinCode(joinCode);
 
@@ -191,7 +191,7 @@ public class GameController {
     // Endpoint to get game details by gameId
     @GetMapping("/{gameId}")
     // retrieves a game by its game ID
-    public ResponseEntity<?> getGame(@PathVariable String gameId) {
+    public ResponseEntity<?> getGame(@PathVariable("gameId") String gameId) {
 
         GameRoom room = sessionManager.getRoom(gameId);
 
