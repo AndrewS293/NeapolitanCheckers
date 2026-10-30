@@ -375,20 +375,7 @@ public class GameWebSocketHandler extends TextWebSocketHandler {
         int toRow = toRowNode.asInt();
         int toCol = toColNode.asInt();
 
-        // Convert the 8x8 board coordinates into the 32 playable squares.
-        int start = Board.toIndex(fromRow, fromCol);
-        int end = Board.toIndex(toRow, toCol);
-
-        if (start == -1 || end == -1) {
-            sendMessage(session, new WebSocketMessage(
-                    "ERROR", gameId, playerNumber,
-                    room.getPlayerCount(), room.getStatus().name(),
-                    username, "Move uses an invalid or unplayable square."
-            ));
-            return;
-        }
-
-                synchronized (room) {
+        synchronized (room) {
 
             if (room.getStatus() != GameRoom.Status.ACTIVE
                     || !room.isPlayerConnected(1)
@@ -412,6 +399,18 @@ public class GameWebSocketHandler extends TextWebSocketHandler {
             }
 
             GameLogic currentGame = room.getGameLogic();
+                        Board currentBoard = currentGame.getBoard();
+                        int start = currentBoard.indexAt(fromRow, fromCol);
+                        int end = currentBoard.indexAt(toRow, toCol);
+
+                        if (start < 0 || end < 0) {
+                                sendMessage(session, new WebSocketMessage(
+                                                "ERROR", gameId, playerNumber,
+                                                room.getPlayerCount(), room.getStatus().name(),
+                                                username, "Move uses an invalid or unplayable square."
+                                ));
+                                return;
+                        }
 
             int expectedPlayer = currentGame.getCurrentPlayer()
                     == GameLogic.red_player ? 1 : 2;
@@ -461,22 +460,25 @@ public class GameWebSocketHandler extends TextWebSocketHandler {
                     .getPiece(end).isKing();
             boolean promoted = !wasKing && king;
 
+            int boardSize = currentBoard.getBoardSize();
             String fromSquare = ""
                     + (char) ('a' + fromCol)
-                    + (8 - fromRow);
+                    + (boardSize - fromRow);
 
             String toSquare = ""
                     + (char) ('a' + toCol)
-                    + (8 - toRow);
+                    + (boardSize - toRow);
 
             List<String> capturedSquares = new ArrayList<>();
 
             if (capture) {
-                int capturedIndex = acceptedMove.getMiddleSquare(temporaryGame.getBoard());
+                Board movedBoard = temporaryGame.getBoard();
+                int capturedIndex = acceptedMove.getMiddleSquare(movedBoard);
 
                 capturedSquares.add(
-                        "" + (char) ('a' + Board.getCol(capturedIndex))
-                                + (8 - Board.getRow(capturedIndex))
+                        "" + (char) ('a' + movedBoard.colOf(capturedIndex))
+                                + (movedBoard.getBoardSize()
+                                        - movedBoard.rowOf(capturedIndex))
                 );
             }
 
