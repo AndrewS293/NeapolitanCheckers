@@ -68,9 +68,6 @@ public class GameBoardController {
     }
 
     public Scene createScene() {
-        onlineMode = false;
-        awaitingServerMove = false;
-
         Label title = new Label("Neapolitan Checkers");
         title.setStyle(
                 "-fx-font-size: 28px;" +
@@ -86,6 +83,7 @@ public class GameBoardController {
         updateGameStatus();
 
         Button newGameButton = new Button("New Game");
+        newGameButton.setDisable(onlineMode);
         Button backButton = new Button("Back to Menu");
 
         newGameButton.setOnAction(event -> {
