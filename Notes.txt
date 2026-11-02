@@ -13,6 +13,6 @@ Mac:
 ./mvnw clean spring-boot:run
 
 Windows:
-.\backend\mvnw.cmd -f ".\frontend\pom.xml" clean javafx:run 
+.\mvnw -pl frontend javafx:run  
 Mac:
-./backend/mvnw -f "./frontend/pom.xml" clean javafx:run 
+./mvnw -pl frontend javafx:run  
