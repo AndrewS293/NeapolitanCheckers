@@ -1,4 +1,4 @@
-package main.java.com.checkers.variants.thai;
+package com.checkers.variants.thai;
 
 import com.checkers.config.GameConfig;
 import com.checkers.logic.Board;
@@ -41,7 +41,7 @@ public final class ThaiRules implements GameRules {
     @Override
     public void initializeBoard(Board board) {
         // implementation for initializing Thai Checkers board
-        if (board == null || !getVariantId().equals(board.getVariantId())) {
+        if (board == null || !getVariantId().equals(board.getConfig().getVariantId())) {
             throw new IllegalArgumentException("Wrong board");
         }
         board.reset();

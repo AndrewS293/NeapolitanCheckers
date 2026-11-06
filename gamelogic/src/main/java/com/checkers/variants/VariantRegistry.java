@@ -3,6 +3,7 @@ package com.checkers.variants;
 import com.checkers.rules.GameRules;
 import com.checkers.variants.american.AmericanRules;
 import com.checkers.variants.malaysian.MalaysianRules;
+import com.checkers.variants.thai.ThaiRules;
 
 import java.util.Collection;
 import java.util.LinkedHashMap;
@@ -24,7 +25,7 @@ public final class VariantRegistry {
     }
 
     public static VariantRegistry defaults() {
-        return new VariantRegistry(List.of(new AmericanRules(), new MalaysianRules()));
+        return new VariantRegistry(List.of(new AmericanRules(), new MalaysianRules(), new ThaiRules()));
     }
 
     public GameRules get(String variantId) {

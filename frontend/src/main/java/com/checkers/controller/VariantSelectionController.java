@@ -1,4 +1,3 @@
-
 package com.checkers.controller;
 
 import com.checkers.Main;
