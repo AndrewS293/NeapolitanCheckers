@@ -67,12 +67,41 @@ public class GameBoardController {
         this.gameLogic = gameLogic;
     }
 
+    /*
+     * Checks whether the player selected Senegalese Checkers.
+     * This keeps the other variants using their normal colors.
+     */
+    private boolean isSenegaleseVariant() {
+        return "SENEGALESE".equals(
+                gameLogic.getConfig().getVariantId());
+    }
+
+    /*
+     * Senegalese Checkers uses green for the playable squares.
+     */
+    private Color getDarkSquareColor() {
+        return isSenegaleseVariant()
+                ? Color.web("#00853F")
+                : GameStyleConfig.DARK_SQUARE_COLOR;
+    }
+
+    /*
+     * Senegalese Checkers uses a light cream color
+     * for the remaining squares.
+     */
+    private Color getLightSquareColor() {
+        return isSenegaleseVariant()
+                ? Color.web("#FFF4C2")
+                : GameStyleConfig.LIGHT_SQUARE_COLOR;
+    }
+
     public Scene createScene() {
-        Label title = new Label("Neapolitan Checkers");
+        // Displays the name of the selected checkers variant.
+        Label title = new Label(
+                gameLogic.getRules().getDisplayName());
         title.setStyle(
                 "-fx-font-size: 28px;" +
-                "-fx-font-weight: bold;"
-        );
+                        "-fx-font-weight: bold;");
 
         gameStatus = new Label();
         gameStatus.setStyle("-fx-font-size: 16px;");
@@ -149,23 +178,20 @@ public class GameBoardController {
 
         Rectangle background = new Rectangle(
                 SQUARE_SIZE,
-                SQUARE_SIZE
-        );
+                SQUARE_SIZE);
 
         background.setStrokeType(
-                javafx.scene.shape.StrokeType.INSIDE
-        );
-
+                javafx.scene.shape.StrokeType.INSIDE);
 
         boolean darkSquare = getCurrentBoard()
                 .getConfig()
                 .isPlayableSquare(row, col);
 
+        // Uses Senegalese colors only when the Senegalese variant is active.
         background.setFill(
                 darkSquare
-                        ? GameStyleConfig.DARK_SQUARE_COLOR
-                        : GameStyleConfig.LIGHT_SQUARE_COLOR
-        );
+                        ? getDarkSquareColor()
+                        : getLightSquareColor());
 
         square.getChildren().add(background);
 
@@ -208,10 +234,18 @@ public class GameBoardController {
     private Circle createPiece(Piece piece) {
         Color color;
 
+        /*
+         * Senegalese Checkers uses yellow and red pieces.
+         * Other variants continue using their original piece colors.
+         */
         if (piece.isBlack()) {
-            color = GameStyleConfig.BLACK_PIECE_COLOR;
+            color = isSenegaleseVariant()
+                    ? Color.web("#FCD116")
+                    : GameStyleConfig.BLACK_PIECE_COLOR;
         } else if (piece.isRed()) {
-            color = GameStyleConfig.RED_PIECE_COLOR;
+            color = isSenegaleseVariant()
+                    ? Color.web("#CE1126")
+                    : GameStyleConfig.RED_PIECE_COLOR;
         } else {
             return null;
         }
@@ -219,8 +253,7 @@ public class GameBoardController {
         Circle circle = new Circle(SQUARE_SIZE * 0.35);
 
         circle.setStrokeType(
-                javafx.scene.shape.StrokeType.INSIDE
-        );
+                javafx.scene.shape.StrokeType.INSIDE);
 
         circle.setFill(color);
         circle.setStroke(GameStyleConfig.PIECE_OUTLINE_COLOR);
@@ -251,15 +284,13 @@ public class GameBoardController {
             }
 
             if (gameLogic.isCurrentPlayerPiece(clickedIndex)) {
-                List<Integer> destinations =
-                        gameLogic.getLegalDestinations(clickedIndex);
+                List<Integer> destinations = gameLogic.getLegalDestinations(clickedIndex);
 
                 if (destinations.isEmpty()) {
                     gameStatus.setText(
                             gameLogic.hasAnyJump(gameLogic.getCurrentPlayer())
                                     ? "A jump is available. Select a piece that can jump."
-                                    : "That piece has no legal moves."
-                    );
+                                    : "That piece has no legal moves.");
                 } else {
                     selectedIndex = clickedIndex;
                     legalDestinations = destinations;
@@ -297,8 +328,7 @@ public class GameBoardController {
             if (!legalDestinations.contains(clickedIndex)) {
                 if (gameLogic.isCurrentPlayerPiece(clickedIndex)
                         && isLocalPlayersPiece(clickedIndex)) {
-                    List<Integer> destinations =
-                            gameLogic.getLegalDestinations(clickedIndex);
+                    List<Integer> destinations = gameLogic.getLegalDestinations(clickedIndex);
 
                     if (!destinations.isEmpty()) {
                         selectedIndex = clickedIndex;
@@ -326,8 +356,7 @@ public class GameBoardController {
         }
 
         if (gameLogic.isCurrentPlayerPiece(clickedIndex)) {
-            List<Integer> destinations =
-                    gameLogic.getLegalDestinations(clickedIndex);
+            List<Integer> destinations = gameLogic.getLegalDestinations(clickedIndex);
 
             if (!destinations.isEmpty()) {
                 selectedIndex = clickedIndex;
@@ -355,8 +384,7 @@ public class GameBoardController {
     private void updateSelectionAfterMove() {
         if (gameLogic.isMultiJumpInProgress()) {
             selectedIndex = gameLogic.getForcedJumpIndex();
-            legalDestinations =
-                    gameLogic.getLegalDestinations(selectedIndex);
+            legalDestinations = gameLogic.getLegalDestinations(selectedIndex);
         } else {
             selectedIndex = -1;
             legalDestinations = Collections.emptyList();
@@ -402,8 +430,7 @@ public class GameBoardController {
     public void configureOnlineGame(
             String gameId,
             int playerNumber,
-            GameWebSocketClient client
-    ) {
+            GameWebSocketClient client) {
         onlineMode = true;
         onlineGameId = gameId;
         onlinePlayerNumber = playerNumber;
@@ -446,8 +473,7 @@ public class GameBoardController {
                     message = payload;
                 } else {
                     System.err.println(
-                            "GAME_MESSAGE has an invalid payload: " + payload
-                    );
+                            "GAME_MESSAGE has an invalid payload: " + payload);
                     return;
                 }
 
@@ -462,35 +488,32 @@ public class GameBoardController {
 
             switch (type) {
                 case "CONNECTED" ->
-                        System.out.println("CONNECTED received: " + message);
+                    System.out.println("CONNECTED received: " + message);
 
                 case "GAME_STARTED" ->
-                        System.out.println("Game started.");
+                    System.out.println("Game started.");
 
                 case "PLAYER_JOINED" ->
-                        System.out.println("Player joined: " + message);
+                    System.out.println("Player joined: " + message);
 
                 case "MOVE" ->
-                        handleOnlineMove(message);
+                    handleOnlineMove(message);
 
                 case "PLAYER_LEFT" ->
-                        System.out.println("Player left: " + message);
+                    System.out.println("Player left: " + message);
 
                 case "ERROR" -> {
                     awaitingServerMove = false;
                     System.err.println("Server error: " + message);
-                    Platform.runLater(() ->
-                            gameStatus.setText("Server rejected the move.")
-                    );
+                    Platform.runLater(() -> gameStatus.setText("Server rejected the move."));
                 }
 
                 default ->
-                        System.out.println("Unhandled server message: " + message);
+                    System.out.println("Unhandled server message: " + message);
             }
         } catch (Exception e) {
             System.err.println(
-                    "Failed to handle server message: " + e.getMessage()
-            );
+                    "Failed to handle server message: " + e.getMessage());
             e.printStackTrace();
         }
     }
@@ -527,8 +550,7 @@ public class GameBoardController {
                         || !currentBoard.isPlayableIndex(start)
                         || !currentBoard.isPlayableIndex(end)) {
                     System.err.println(
-                            "Server sent invalid or unplayable coordinates."
-                    );
+                            "Server sent invalid or unplayable coordinates.");
                     return;
                 }
 
@@ -545,13 +567,11 @@ public class GameBoardController {
                     System.out.println("Online move applied successfully.");
                 } else {
                     System.err.println(
-                            "Online move could not be applied locally."
-                    );
+                            "Online move could not be applied locally.");
                 }
             } catch (Exception e) {
                 System.err.println(
-                        "Error processing online move: " + e.getMessage()
-                );
+                        "Error processing online move: " + e.getMessage());
                 e.printStackTrace();
             } finally {
                 if (movePlayer == onlinePlayerNumber) {
@@ -569,8 +589,7 @@ public class GameBoardController {
             int fromRow,
             int fromCol,
             int toRow,
-            int toCol
-    ) {
+            int toCol) {
         if (!onlineMode) {
             Board currentBoard = getCurrentBoard();
 
@@ -604,8 +623,7 @@ public class GameBoardController {
                 fromRow,
                 fromCol,
                 toRow,
-                toCol
-        );
+                toCol);
 
         selectedIndex = -1;
         legalDestinations = Collections.emptyList();

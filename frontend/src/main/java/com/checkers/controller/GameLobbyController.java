@@ -39,6 +39,8 @@ public class GameLobbyController {
 
     private Button americanVariantButton;
     private Button malaysianVariantButton;
+    // Button used to select Senegalese Checkers in the online lobby.
+    private Button senegaleseVariantButton;
 
     private GameWebSocketClient webSocketClient;
     private String currentGameId;
@@ -55,48 +57,50 @@ public class GameLobbyController {
         Label title = new Label("Online Multiplayer");
         title.setStyle(
                 "-fx-font-size: 28px;"
-                + "-fx-font-weight: bold;"
-                + "-fx-text-fill: white;"
-        );
+                        + "-fx-font-weight: bold;"
+                        + "-fx-text-fill: white;");
 
         Label variantTitle = new Label("Choose Your Variant");
         variantTitle.setStyle(
                 "-fx-font-size: 18px;"
-                + "-fx-font-weight: bold;"
-                + "-fx-text-fill: white;"
-        );
+                        + "-fx-font-weight: bold;"
+                        + "-fx-text-fill: white;");
 
         americanVariantButton = createVariantButton(
                 "AMERICAN",
                 "American Checkers",
                 "8 × 8 Board",
                 "Classic checkers with short kings.",
-                true
-        );
+                true);
 
         malaysianVariantButton = createVariantButton(
                 "MALAYSIAN",
                 "Malaysian Draughts",
                 "12 × 12 Board",
                 "Flying kings, maximum captures and huffing.",
-                true
-        );
+                true);
 
         Button thaiButton = createVariantButton(
                 "THAI",
                 "Thai Draughts",
                 "8 × 8 Board",
                 "----",
-                false
-        );
+                false);
 
         Button turkishButton = createVariantButton(
                 "TURKISH",
                 "Turkish Draughts",
                 "8 × 8 Board",
                 "-----",
-                false
-        );
+                false);
+
+        // Creates the selectable Senegalese Checkers card.
+        senegaleseVariantButton = createVariantButton(
+                "SENEGALESE",
+                "Senegalese Checkers",
+                "10 x 10 Board",
+                "Backward captures, flying kings, and maximum captures.",
+                true);
 
         updateVariantCardStyles();
 
@@ -109,28 +113,25 @@ public class GameLobbyController {
         variantsGrid.add(malaysianVariantButton, 1, 0);
         variantsGrid.add(thaiButton, 0, 1);
         variantsGrid.add(turkishButton, 1, 1);
+        // Places Senegalese Checkers on a new full-width row.
+        variantsGrid.add(senegaleseVariantButton, 0, 2, 2, 1);
 
         Button createPublicButton = new Button("Create Public Game");
-        createPublicButton.setOnAction(event ->
-                createGame("PUBLIC"));
+        createPublicButton.setOnAction(event -> createGame("PUBLIC"));
 
         Button createPrivateButton = new Button("Create Private Game");
-        createPrivateButton.setOnAction(event ->
-                createGame("PRIVATE"));
+        createPrivateButton.setOnAction(event -> createGame("PRIVATE"));
 
         Button refreshButton = new Button("Refresh Public Games");
-        refreshButton.setOnAction(event ->
-                refreshPublicGames());
+        refreshButton.setOnAction(event -> refreshPublicGames());
 
         Button joinPublicButton = new Button("Join Selected Game");
-        joinPublicButton.setOnAction(event ->
-                joinSelectedPublicGame());
+        joinPublicButton.setOnAction(event -> joinSelectedPublicGame());
 
         joinCodeField.setPromptText("Enter private room join code");
 
         Button joinPrivateButton = new Button("Join Private Game");
-        joinPrivateButton.setOnAction(event ->
-                joinPrivateGame());
+        joinPrivateButton.setOnAction(event -> joinPrivateGame());
 
         Button backButton = new Button("Back to Menu");
         backButton.setOnAction(event -> {
@@ -139,24 +140,20 @@ public class GameLobbyController {
         });
 
         HBox createButtons = new HBox(
-                10, createPublicButton, createPrivateButton
-        );
+                10, createPublicButton, createPrivateButton);
         createButtons.setAlignment(Pos.CENTER);
 
         HBox publicGameButtons = new HBox(
-                10, refreshButton, joinPublicButton
-        );
+                10, refreshButton, joinPublicButton);
         publicGameButtons.setAlignment(Pos.CENTER);
 
         HBox privateJoinRow = new HBox(
-                10, joinCodeField, joinPrivateButton
-        );
+                10, joinCodeField, joinPrivateButton);
         privateJoinRow.setAlignment(Pos.CENTER);
 
         gamesList.setPrefHeight(150);
         gamesList.setPlaceholder(
-                new Label("No public games loaded. Click Refresh.")
-        );
+                new Label("No public games loaded. Click Refresh."));
 
         roomLabel.setWrapText(true);
         statusLabel.setWrapText(true);
@@ -175,8 +172,7 @@ public class GameLobbyController {
                 privateJoinRow,
                 roomLabel,
                 statusLabel,
-                backButton
-        );
+                backButton);
 
         root.setPadding(new Insets(20));
         root.setAlignment(Pos.TOP_CENTER);
@@ -189,17 +185,20 @@ public class GameLobbyController {
         if (americanVariantButton != null) {
             americanVariantButton.setStyle(
                     variantButtonStyle(
-                            selectedVariantId.equals("AMERICAN")
-                    )
-            );
+                            selectedVariantId.equals("AMERICAN")));
         }
 
         if (malaysianVariantButton != null) {
             malaysianVariantButton.setStyle(
                     variantButtonStyle(
-                            selectedVariantId.equals("MALAYSIAN")
-                    )
-            );
+                            selectedVariantId.equals("MALAYSIAN")));
+        }
+
+        // Highlights the Senegalese card when the player selects it.
+        if (senegaleseVariantButton != null) {
+            senegaleseVariantButton.setStyle(
+                    variantButtonStyle(
+                            selectedVariantId.equals("SENEGALESE")));
         }
     }
 
@@ -227,8 +226,7 @@ public class GameLobbyController {
         Button button = new Button(
                 board + "\n\n" + name + "\n\n"
                         + description + "\n\n"
-                        + (available ? "AVAILABLE" : "COMING SOON")
-        );
+                        + (available ? "AVAILABLE" : "COMING SOON"));
 
         button.setPrefSize(230, 155);
         button.setWrapText(true);
@@ -261,8 +259,7 @@ public class GameLobbyController {
                 if (gameId == null || gameId.isBlank()) {
                     throw new IllegalStateException(
                             "The server did not return a gameId. Response: "
-                                    + response
-                    );
+                                    + response);
                 }
 
                 Platform.runLater(() -> {
@@ -272,8 +269,8 @@ public class GameLobbyController {
                             + "\nVisibility: " + visibility
                             + "\nVariant: " + currentVariantId
                             + (joinCode != null && !joinCode.isBlank()
-                                ? "\nJoin Code: " + joinCode
-                                : "")
+                                    ? "\nJoin Code: " + joinCode
+                                    : "")
                             + "\n\nConnecting to the game server...";
 
                     roomLabel.setText(details);
@@ -285,9 +282,7 @@ public class GameLobbyController {
                 System.err.println("Error: " + e.getMessage());
                 e.printStackTrace();
 
-                Platform.runLater(() ->
-                    showError("Could not create game", e)
-                );
+                Platform.runLater(() -> showError("Could not create game", e));
             }
         });
     }
@@ -305,13 +300,12 @@ public class GameLobbyController {
                     JsonNode games = response.isArray()
                             ? response
                             : response.has("games")
-                                ? response.get("games")
-                                : null;
+                                    ? response.get("games")
+                                    : null;
 
                     if (games == null || !games.isArray()) {
                         statusLabel.setText(
-                                "The server returned an unexpected public-games response."
-                        );
+                                "The server returned an unexpected public-games response.");
                         return;
                     }
 
@@ -329,16 +323,14 @@ public class GameLobbyController {
                                             + " | Players: "
                                             + (players == null ? "?" : players)
                                             + " | Status: "
-                                            + (status == null ? "?" : status)
-                            );
+                                            + (status == null ? "?" : status));
                         }
                     }
 
                     statusLabel.setText(
                             gamesList.getItems().isEmpty()
                                     ? "No public games are currently available."
-                                    : "Select a public game to join."
-                    );
+                                    : "Select a public game to join.");
                 });
 
             } catch (Exception e) {
@@ -383,8 +375,7 @@ public class GameLobbyController {
                     roomLabel.setText(
                             "Room ID: " + gameId
                                     + "\nVariant: " + currentVariantId
-                                    + "\nConnecting to the game server..."
-                    );
+                                    + "\nConnecting to the game server...");
 
                     connectToGame(gameId);
                 });
@@ -416,15 +407,13 @@ public class GameLobbyController {
 
                 if (variantId == null || variantId.isBlank()) {
                     throw new IllegalStateException(
-                            "The server did not return the game's variant."
-                    );
+                            "The server did not return the game's variant.");
                 }
 
                 if (gameId == null || gameId.isBlank()) {
                     throw new IllegalStateException(
                             "The server did not return a gameId. Response: "
-                                    + response
-                    );
+                                    + response);
                 }
 
                 Platform.runLater(() -> {
@@ -434,8 +423,7 @@ public class GameLobbyController {
                     roomLabel.setText(
                             "Room ID: " + gameId
                                     + "\nVariant: " + currentVariantId
-                                    + "\nConnecting to the game server..."
-                    );
+                                    + "\nConnecting to the game server...");
 
                     connectToGame(gameId);
                 });
@@ -457,9 +445,7 @@ public class GameLobbyController {
         webSocketClient = new GameWebSocketClient(
                 Main.getAuthApi().getClient(),
                 message -> handleServerMessage(message),
-                status -> Platform.runLater(() ->
-                        statusLabel.setText(status))
-        );
+                status -> Platform.runLater(() -> statusLabel.setText(status)));
 
         webSocketClient.connect(gameId, "");
     }
@@ -489,50 +475,38 @@ public class GameLobbyController {
                                     + ", gameId="
                                     + message.path("gameId").asText()
                                     + ", message="
-                                    + message
-                    );
+                                    + message);
 
-                    Platform.runLater(() ->
-                            statusLabel.setText(
-                                    "Connected. Player " + connectedPlayerNumber
-                                            + ", players: "
-                                            + message.path("players").asInt()
-                            )
-                    );
+                    Platform.runLater(() -> statusLabel.setText(
+                            "Connected. Player " + connectedPlayerNumber
+                                    + ", players: "
+                                    + message.path("players").asInt()));
                     break;
-
 
                 case "PLAYER_JOINED":
                     statusLabel.setText(
                             (username == null ? "A player" : username)
                                     + " joined. Players: "
-                                    + (players == null ? "?" : players)
-                    );
+                                    + (players == null ? "?" : players));
                     break;
-
 
                 case "PLAYER_LEFT":
                     statusLabel.setText(
                             (username == null ? "A player" : username)
-                                    + " left the room."
-                    );
+                                    + " left the room.");
                     break;
 
                 case "GAME_WAITING":
                     statusLabel.setText(
-                            "Waiting for another player..."
-                    );
+                            "Waiting for another player...");
                     break;
 
-                
-                
                 case "GAME_STARTED":
                     System.out.println("Game started.");
                     System.out.println(
                             "gameBoardOpened=" + gameBoardOpened
                                     + ", gameId=" + currentGameId
-                                    + ", player=" + connectedPlayerNumber
-                    );
+                                    + ", player=" + connectedPlayerNumber);
                     if (gameBoardOpened || webSocketClient == null
                             || currentGameId == null || connectedPlayerNumber == 0) {
                         break;
@@ -541,39 +515,30 @@ public class GameLobbyController {
                     gameBoardOpened = true;
 
                     GameFactory factory = new GameFactory(
-                            VariantRegistry.defaults()
-                    );
+                            VariantRegistry.defaults());
 
                     GameLogic onlineGame = factory.createGame(currentVariantId);
 
-                    GameBoardController boardController =
-                            new GameBoardController(onlineGame);
+                    GameBoardController boardController = new GameBoardController(onlineGame);
 
                     boardController.configureOnlineGame(
                             currentGameId,
                             connectedPlayerNumber,
-                            webSocketClient
-                    );
+                            webSocketClient);
 
                     // Transfer future messages to this same board controller.
                     webSocketClient.setMessageHandler(
-                            boardController::handleServerMessage
-                    );
+                            boardController::handleServerMessage);
 
-                    Platform.runLater(() ->
-                            Main.showOnlineGameBoard(boardController)
-                    );
+                    Platform.runLater(() -> Main.showOnlineGameBoard(boardController));
                     break;
-
-
 
                 default:
                     statusLabel.setText(
                             type
                                     + (serverMessage == null
-                                        ? ""
-                                        : ": " + serverMessage)
-                    );
+                                            ? ""
+                                            : ": " + serverMessage));
                     break;
             }
         });

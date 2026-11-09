@@ -3,6 +3,7 @@ package com.checkers.variants;
 import com.checkers.rules.GameRules;
 import com.checkers.variants.american.AmericanRules;
 import com.checkers.variants.malaysian.MalaysianRules;
+import com.checkers.variants.senegalese.SenegaleseRules;
 import com.checkers.variants.thai.ThaiRules;
 
 import java.util.Collection;
@@ -17,7 +18,8 @@ public final class VariantRegistry {
     public VariantRegistry(Collection<? extends GameRules> implementations) {
         for (GameRules rules : implementations) {
             String id = rules.getVariantId();
-            if (id == null || id.isBlank()) throw new IllegalArgumentException("Variant ID cannot be blank");
+            if (id == null || id.isBlank())
+                throw new IllegalArgumentException("Variant ID cannot be blank");
             if (variants.putIfAbsent(id, rules) != null) {
                 throw new IllegalArgumentException("Duplicate variant ID: " + id);
             }
@@ -25,14 +27,21 @@ public final class VariantRegistry {
     }
 
     public static VariantRegistry defaults() {
-        return new VariantRegistry(List.of(new AmericanRules(), new MalaysianRules(), new ThaiRules()));
+        return new VariantRegistry(List.of(
+                new AmericanRules(),
+                new MalaysianRules(),
+                new ThaiRules(),
+                new SenegaleseRules()));
     }
 
     public GameRules get(String variantId) {
         GameRules rules = variants.get(variantId);
-        if (rules == null) throw new IllegalArgumentException("Unknown checkers variant: " + variantId);
+        if (rules == null)
+            throw new IllegalArgumentException("Unknown checkers variant: " + variantId);
         return rules;
     }
 
-    public Collection<GameRules> getAll() { return List.copyOf(variants.values()); }
+    public Collection<GameRules> getAll() {
+        return List.copyOf(variants.values());
+    }
 }
