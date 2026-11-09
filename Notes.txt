@@ -14,5 +14,10 @@ Mac:
 
 Windows:
 .\mvnw -pl frontend javafx:run  
+
+.\mvnw -pl frontend -am clean install -DskipTests
+
 Mac:
 ./mvnw -pl frontend javafx:run  
+
+./mvnw -pl frontend -am clean install -DskipTests
