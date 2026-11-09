@@ -1,4 +1,4 @@
-/*package com.checkers.controller;
+package com.checkers.controller;
 
 import com.checkers.database.MoveDAO;
 import com.checkers.websocket.GameSessionManager;
@@ -30,8 +30,8 @@ class GameControllerReplayTest {
                         "player_id": 13,
                         "move_number": 1,
                         "move_data": {
-                            "start": 20,
-                            "end": 16
+                            "start": 40,
+                            "end": 33
                         }
                     }
                 ]
@@ -122,4 +122,4 @@ class GameControllerReplayTest {
             );
         }
     }
-}*/
+}

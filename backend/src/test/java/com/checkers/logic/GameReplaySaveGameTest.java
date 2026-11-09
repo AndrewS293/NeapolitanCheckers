@@ -1,4 +1,4 @@
-/*package com.checkers.logic;
+package com.checkers.logic;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -38,22 +38,22 @@ class GameReplaySavedGameTest {
         // Move 21 leaves red at d6 with another jump required.
         GameLogic beforePromotion = replay.seek(21);
 
-        assertTrue(beforePromotion.getBoard().getPiece(9).isRed());
-        assertFalse(beforePromotion.getBoard().getPiece(9).isKing());
-        assertTrue(beforePromotion.getBoard().getPiece(6).isBlack());
+        assertTrue(beforePromotion.getBoard().getPiece(19).isRed());
+        assertFalse(beforePromotion.getBoard().getPiece(19).isKing());
+        assertTrue(beforePromotion.getBoard().getPiece(12).isBlack());
 
         assertEquals(GameLogic.red_player,
                 beforePromotion.getCurrentPlayer());
-        assertEquals(9, beforePromotion.getForcedJumpIndex());
+        assertEquals(19, beforePromotion.getForcedJumpIndex());
 
         // Move 22: d6 to f8, capturing e7 and becoming a king.
         GameLogic promoted = replay.next();
 
         assertEquals(22, replay.getPosition());
-        assertTrue(promoted.getBoard().getPiece(2).isRed());
-        assertTrue(promoted.getBoard().getPiece(2).isKing());
-        assertTrue(promoted.getBoard().getPiece(9).isEmpty());
-        assertTrue(promoted.getBoard().getPiece(6).isEmpty());
+        assertTrue(promoted.getBoard().getPiece(5).isRed());
+        assertTrue(promoted.getBoard().getPiece(5).isKing());
+        assertTrue(promoted.getBoard().getPiece(19).isEmpty());
+        assertTrue(promoted.getBoard().getPiece(12).isEmpty());
 
         assertEquals(GameLogic.black_player,
                 promoted.getCurrentPlayer());
@@ -63,14 +63,14 @@ class GameReplaySavedGameTest {
         GameLogic restored = replay.previous();
 
         assertEquals(21, replay.getPosition());
-        assertTrue(restored.getBoard().getPiece(9).isRed());
-        assertFalse(restored.getBoard().getPiece(9).isKing());
-        assertTrue(restored.getBoard().getPiece(6).isBlack());
-        assertTrue(restored.getBoard().getPiece(2).isEmpty());
+        assertTrue(restored.getBoard().getPiece(19).isRed());
+        assertFalse(restored.getBoard().getPiece(19).isKing());
+        assertTrue(restored.getBoard().getPiece(12).isBlack());
+        assertTrue(restored.getBoard().getPiece(5).isEmpty());
 
         assertEquals(GameLogic.red_player,
                 restored.getCurrentPlayer());
-        assertEquals(9, restored.getForcedJumpIndex());
+        assertEquals(19, restored.getForcedJumpIndex());
     }
 
     @Test
@@ -81,29 +81,29 @@ class GameReplaySavedGameTest {
         // Before move 29: black is at d6.
         GameLogic beforeJumps = replay.seek(28);
 
-        assertTrue(beforeJumps.getBoard().getPiece(9).isBlack());
-        assertTrue(beforeJumps.getBoard().getPiece(14).isRed());
-        assertTrue(beforeJumps.getBoard().getPiece(23).isRed());
+        assertTrue(beforeJumps.getBoard().getPiece(19).isBlack());
+        assertTrue(beforeJumps.getBoard().getPiece(28).isRed());
+        assertTrue(beforeJumps.getBoard().getPiece(46).isRed());
 
         // Move 29: d6 to f4, capturing e5.
         GameLogic firstJump = replay.next();
 
         assertEquals(29, replay.getPosition());
-        assertTrue(firstJump.getBoard().getPiece(18).isBlack());
-        assertTrue(firstJump.getBoard().getPiece(14).isEmpty());
+        assertTrue(firstJump.getBoard().getPiece(37).isBlack());
+        assertTrue(firstJump.getBoard().getPiece(28).isEmpty());
 
         // Black must continue with the same piece.
         assertEquals(GameLogic.black_player,
                 firstJump.getCurrentPlayer());
-        assertEquals(18, firstJump.getForcedJumpIndex());
+        assertEquals(37, firstJump.getForcedJumpIndex());
 
         // Move 30: f4 to h2, capturing g3.
         GameLogic secondJump = replay.next();
 
         assertEquals(30, replay.getPosition());
-        assertTrue(secondJump.getBoard().getPiece(27).isBlack());
-        assertTrue(secondJump.getBoard().getPiece(18).isEmpty());
-        assertTrue(secondJump.getBoard().getPiece(23).isEmpty());
+        assertTrue(secondJump.getBoard().getPiece(55).isBlack());
+        assertTrue(secondJump.getBoard().getPiece(37).isEmpty());
+        assertTrue(secondJump.getBoard().getPiece(46).isEmpty());
 
         assertEquals(GameLogic.red_player,
                 secondJump.getCurrentPlayer());
@@ -112,25 +112,25 @@ class GameReplaySavedGameTest {
         // Undo the second jump.
         GameLogic undoSecond = replay.previous();
 
-        assertTrue(undoSecond.getBoard().getPiece(18).isBlack());
-        assertTrue(undoSecond.getBoard().getPiece(23).isRed());
-        assertTrue(undoSecond.getBoard().getPiece(27).isEmpty());
+        assertTrue(undoSecond.getBoard().getPiece(37).isBlack());
+        assertTrue(undoSecond.getBoard().getPiece(46).isRed());
+        assertTrue(undoSecond.getBoard().getPiece(55).isEmpty());
 
         assertEquals(GameLogic.black_player,
                 undoSecond.getCurrentPlayer());
-        assertEquals(18, undoSecond.getForcedJumpIndex());
+        assertEquals(37, undoSecond.getForcedJumpIndex());
 
         // Undo the first jump.
         GameLogic undoFirst = replay.previous();
 
         assertEquals(28, replay.getPosition());
-        assertTrue(undoFirst.getBoard().getPiece(9).isBlack());
-        assertTrue(undoFirst.getBoard().getPiece(14).isRed());
-        assertTrue(undoFirst.getBoard().getPiece(23).isRed());
-        assertTrue(undoFirst.getBoard().getPiece(18).isEmpty());
+        assertTrue(undoFirst.getBoard().getPiece(19).isBlack());
+        assertTrue(undoFirst.getBoard().getPiece(28).isRed());
+        assertTrue(undoFirst.getBoard().getPiece(46).isRed());
+        assertTrue(undoFirst.getBoard().getPiece(37).isEmpty());
 
         assertEquals(GameLogic.black_player,
                 undoFirst.getCurrentPlayer());
         assertEquals(-1, undoFirst.getForcedJumpIndex());
     }
-}*/
+}

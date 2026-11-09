@@ -30,7 +30,7 @@ public class RegisterController {
         title.setStyle(
                 "-fx-font-size: 28px; " +
                 "-fx-font-weight: bold; " +
-                "-fx-text-fill: #17324D;"
+                "-fx-text-fill: " + AppTheme.INK + ";"
         );
 
         Label subtitle =
@@ -96,7 +96,7 @@ public class RegisterController {
                 new Button("Create account");
 
         registerButton.setStyle(
-                "-fx-background-color: #C95D3A; " +
+                "-fx-background-color: " + AppTheme.PRIMARY + "; " +
                 "-fx-text-fill: white; " +
                 "-fx-font-weight: bold; " +
                 "-fx-font-size: 14px; " +
@@ -303,11 +303,11 @@ public class RegisterController {
                 new VBox(0);
 
         card.setStyle(
-                "-fx-background-color: #FFFDF8; " +
-                "-fx-background-radius: 24; " +
-                "-fx-border-color: #E9D8C8; " +
+                "-fx-background-color: " + AppTheme.SURFACE + "; " +
+                "-fx-background-radius: 8; " +
+                "-fx-border-color: " + AppTheme.BORDER + "; " +
                 "-fx-border-width: 1; " +
-                "-fx-effect: dropshadow(gaussian, rgba(23, 50, 77, 0.16), 12, 0.35, 0, 4);"
+                "-fx-effect: dropshadow(gaussian, rgba(23, 60, 54, 0.12), 10, 0.3, 0, 3);"
         );
         card.setPadding(new Insets(34, 38, 30, 38));
         card.getChildren().add(form);
@@ -315,10 +315,7 @@ public class RegisterController {
         StackPane root =
                 new StackPane(card);
 
-        root.setStyle(
-                "-fx-background-color: #F6EDE2; " +
-                "-fx-background-radius: 28;"
-        );
+        AppTheme.applyBackground(root);
         root.setAlignment(Pos.CENTER);
         root.setPadding(new Insets(28));
 

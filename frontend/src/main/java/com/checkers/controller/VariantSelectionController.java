@@ -17,7 +17,29 @@ import javafx.scene.layout.VBox;
 import javafx.scene.text.Font;
 import javafx.stage.Stage;
 
+import java.util.List;
+
 public class VariantSelectionController {
+
+        private static final List<VariantCardInfo> VARIANT_CARDS = List.of(
+                        new VariantCardInfo("American Checkers", "AMERICAN",
+                                        "8 x 8 board - 12 pieces per player",
+                                        "Forward-moving men, short kings, and mandatory captures."),
+                        new VariantCardInfo("Malaysian Checkers", "MALAYSIAN",
+                                        "12 x 12 board - 30 pieces per player",
+                                        "Flying kings, maximum captures, deferred removal, and huffing."),
+                        new VariantCardInfo("Turkish Checkers", "TURKISH",
+                                        "8 x 8 board",
+                                        "Turkish Draughts rules."),
+                        new VariantCardInfo("Thai Checkers", "THAI",
+                                        "8 x 8 board - 8 pieces per player",
+                                        "Forward-moving men, flying kings, and multi-capture turns."),
+                        new VariantCardInfo("International Checkers", "INTERNATIONAL",
+                                        "10 x 10 board",
+                                        "International Draughts rules."),
+                        new VariantCardInfo("Senegalese Checkers", "SENEGALESE",
+                                        "10 x 10 board - 20 pieces per player",
+                                        "Backward captures, flying kings, and maximum-capture sequences."));
 
         private final Stage stage;
         private final GameFactory gameFactory;
@@ -41,46 +63,6 @@ public class VariantSelectionController {
                 subtitle.setFont(Font.font("Arial", 14));
                 subtitle.setStyle("-fx-text-fill: #52635d;");
 
-                VBox americanCard = createVariantCard(
-                                "American Checkers",
-                                "8 × 8 board  •  12 pieces per player",
-                                "Forward-moving men, short-range kings, "
-                                                + "mandatory captures.",
-                                "AMERICAN");
-
-                VBox malaysianCard = createVariantCard(
-                                "Malaysian Checkers",
-                                "12 × 12 board  •  30 pieces per player",
-                                "Flying kings, maximum captures, "
-                                                + "deferred capture removal, and huffing.",
-                                "MALAYSIAN");
-
-                VBox turkishCard = createVariantCard(
-                                "Turkish Checkers",
-                                "------",
-                                "------",
-                                "TURKISH");
-
-                VBox thaiCard = createVariantCard(
-                                "Thai Checkers",
-                                "-----",
-                                "-----",
-                                "THAI");
-
-                VBox internationalCard = createVariantCard(
-                                "International Checkers",
-                                "-----",
-                                "-----",
-                                "INTERNATIONAL");
-
-                // Card shown for the Senegalese Checkers variant.
-                VBox variantSixCard = createVariantCard(
-                                "Senegalese Checkers",
-                                "10 x 10 board - 20 pieces per player",
-                                "Backward captures, flying kings, and a mandatory "
-                                                + "maximum-capture sequence.",
-                                "SENEGALESE");
-
                 GridPane variants = new GridPane();
                 variants.setAlignment(Pos.TOP_CENTER);
                 variants.setHgap(14);
@@ -94,18 +76,15 @@ public class VariantSelectionController {
                         variants.getColumnConstraints().add(constraints);
                 }
 
-                VBox[] cards = {
-                                americanCard,
-                                malaysianCard,
-                                turkishCard,
-                                thaiCard,
-                                internationalCard,
-                                variantSixCard
-                };
-
-                for (int index = 0; index < cards.length; index++) {
-                        cards[index].setMaxWidth(Double.MAX_VALUE);
-                        variants.add(cards[index], index % 2, index / 2);
+                for (int index = 0; index < VARIANT_CARDS.size(); index++) {
+                        VariantCardInfo variant = VARIANT_CARDS.get(index);
+                        VBox card = createVariantCard(
+                                        variant.name(),
+                                        variant.boardInfo(),
+                                        variant.description(),
+                                        variant.id());
+                        card.setMaxWidth(Double.MAX_VALUE);
+                        variants.add(card, index % 2, index / 2);
                 }
 
                 ScrollPane options = new ScrollPane(variants);
@@ -120,10 +99,15 @@ public class VariantSelectionController {
                 VBox heading = new VBox(6, title, subtitle);
                 heading.setAlignment(Pos.CENTER_LEFT);
 
-                VBox root = new VBox(18, heading, options);
+                Button trainButton = new Button("Train Reinforcement Learning AI");
+                trainButton.setMaxWidth(Double.MAX_VALUE);
+                AppTheme.stylePrimaryButton(trainButton);
+                trainButton.setOnAction(event -> Main.showAiTraining());
+
+                VBox root = new VBox(18, heading, options, trainButton);
                 root.setAlignment(Pos.TOP_LEFT);
                 root.setPadding(new Insets(24));
-                root.setStyle("-fx-background-color: #e9eee9;");
+                AppTheme.applyBackground(root);
                 VBox.setVgrow(options, Priority.ALWAYS);
 
                 Scene scene = new Scene(root, 680, 720);
@@ -159,15 +143,14 @@ public class VariantSelectionController {
                 Button playButton = new Button("Play " + name);
                 playButton.setMaxWidth(Double.MAX_VALUE);
                 playButton.setPrefHeight(32);
-                playButton.setStyle(
-                                "-fx-background-color: #245c50;"
-                                                + "-fx-text-fill: white;"
-                                                + "-fx-font-size: 14px;"
-                                                + "-fx-background-radius: 5px;");
+                boolean available = gameFactory.getAvailableVariants().stream()
+                                .anyMatch(variant -> variant.id().equals(variantId));
+                playButton.setDisable(!available);
+                playButton.setText("Play " + name);
+                AppTheme.stylePrimaryButton(playButton);
 
                 playButton.setOnAction(event -> {
-                        // The factory creates GameLogic with the selected rules.
-                        Main.showGameBoard(variantId);
+                        Main.showGameModeSelection(variantId);
                 });
 
                 VBox card = new VBox(
@@ -176,11 +159,18 @@ public class VariantSelectionController {
                 card.setPadding(new Insets(14));
                 card.setMaxWidth(Double.MAX_VALUE);
                 card.setStyle(
-                                "-fx-background-color: #ffffff;"
+                                "-fx-background-color: " + AppTheme.SURFACE + ";"
                                                 + "-fx-background-radius: 6px;"
-                                                + "-fx-border-color: #cbd6ce;"
+                                                + "-fx-border-color: " + AppTheme.BORDER + ";"
                                                 + "-fx-border-radius: 6px;");
 
                 return card;
         }
+
+        static List<String> variantCardIds() {
+                return VARIANT_CARDS.stream().map(VariantCardInfo::id).toList();
+        }
+
+        private record VariantCardInfo(
+                        String name, String id, String boardInfo, String description) { }
 }
