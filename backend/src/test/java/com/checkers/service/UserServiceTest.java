@@ -17,7 +17,6 @@ import com.checkers.model.User;
 import com.checkers.repository.UserRepository;
 import org.springframework.security.crypto.password.PasswordEncoder;
 
-//contains 4 imcomplete test for team to practice tests
 
 
 @ExtendWith(MockitoExtension.class)
