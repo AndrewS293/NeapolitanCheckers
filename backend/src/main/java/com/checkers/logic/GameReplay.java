@@ -44,21 +44,34 @@ public class GameReplay {
                 );
             }
 
-            JsonNode startNode = moveData.path("start");
-            JsonNode endNode = moveData.path("end");
+                JsonNode startNode = moveData.path("start");
+                JsonNode endNode = moveData.path("end");
+                JsonNode fromRowNode = moveData.path("fromRow");
+                JsonNode fromColNode = moveData.path("fromCol");
+                JsonNode toRowNode = moveData.path("toRow");
+                JsonNode toColNode = moveData.path("toCol");
 
-            if (!startNode.isIntegralNumber()
+                boolean hasCoordinates = fromRowNode.isIntegralNumber()
+                    && fromColNode.isIntegralNumber()
+                    && toRowNode.isIntegralNumber()
+                    && toColNode.isIntegralNumber();
+
+                if (!hasCoordinates && (!startNode.isIntegralNumber()
                     || !startNode.canConvertToInt()
                     || !endNode.isIntegralNumber()
-                    || !endNode.canConvertToInt()) {
+                    || !endNode.canConvertToInt())) {
 
                 throw new IllegalArgumentException(
                         "A saved move is missing valid start/end indices."
                 );
             }
 
-            int start = startNode.asInt();
-            int end = endNode.asInt();
+                int start = hasCoordinates
+                    ? replayGame.getBoard().indexAt(fromRowNode.asInt(), fromColNode.asInt())
+                    : startNode.asInt();
+                int end = hasCoordinates
+                    ? replayGame.getBoard().indexAt(toRowNode.asInt(), toColNode.asInt())
+                    : endNode.asInt();
 
             if (!replayGame.move(start, end)) {
                 throw new IllegalArgumentException(

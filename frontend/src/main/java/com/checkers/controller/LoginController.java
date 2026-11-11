@@ -29,7 +29,7 @@ public class LoginController {
 
         title.setStyle(
                 "-fx-font-size: 28px; " +
-                "-fx-font-weight: bold;"
+                "-fx-font-weight: bold; -fx-text-fill: " + AppTheme.INK + ";"
         );
 
         Label subtitle =
@@ -50,9 +50,11 @@ public class LoginController {
 
         Button loginButton =
                 new Button("Login");
+        AppTheme.stylePrimaryButton(loginButton);
 
         Button registerButton =
                 new Button("Create Account");
+        AppTheme.styleSecondaryButton(registerButton);
 
         loginButton.setOnAction(event -> {
 
@@ -90,6 +92,7 @@ public class LoginController {
         root.setAlignment(
                 Pos.CENTER
         );
+        AppTheme.applyBackground(root);
 
         root.getChildren().addAll(
                 title,

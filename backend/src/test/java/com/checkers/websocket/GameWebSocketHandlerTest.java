@@ -1,7 +1,8 @@
-/*package com.checkers.websocket;
+package com.checkers.websocket;
 
 import com.checkers.logic.Board;
 import com.checkers.logic.GameLogic;
+import com.checkers.database.MoveDAO;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.AfterEach;
@@ -10,6 +11,8 @@ import org.junit.jupiter.api.Test;
 import org.springframework.web.socket.CloseStatus;
 import org.springframework.web.socket.TextMessage;
 import org.springframework.web.socket.WebSocketSession;
+import com.checkers.variants.GameFactory;
+import com.checkers.variants.VariantRegistry;
 
 import java.net.URI;
 import java.util.HashMap;
@@ -32,9 +35,9 @@ class GameWebSocketHandlerTest {
 
     @BeforeEach
     void setUp() throws Exception {
-        sessionManager = new GameSessionManager(null);
+        sessionManager = new GameSessionManager(new GameFactory(VariantRegistry.defaults()));
         handler = new GameWebSocketHandler(sessionManager);
-        sessionManager.createRoom(GAME_ID, 1L, GameVisibility.PUBLIC, "AMERICAN", null);
+        sessionManager.createRoom(GAME_ID, 1L, GameVisibility.PUBLIC, null, "AMERICAN");
         playerOne = createSession("session-one", "alice", GAME_ID);
         playerTwo = createSession("session-two", "bob", GAME_ID);
         handler.afterConnectionEstablished(playerOne);
@@ -82,7 +85,7 @@ class GameWebSocketHandlerTest {
         when(playerOne.isOpen()).thenReturn(false);
         handler.afterConnectionClosed(playerOne, CloseStatus.NORMAL);
 
-        sessionManager.createRoom("GAME02", 2L, GameVisibility.PUBLIC, "AMERICAN", null);
+        sessionManager.createRoom("GAME02", 2L, GameVisibility.PUBLIC, null, "AMERICAN");
         WebSocketSession replacementSession = createSession("session-one-new", "alice", "GAME02");
         handler.afterConnectionEstablished(replacementSession);
         WebSocketSession newOpponent = createSession("session-three", "carol", "GAME02");
@@ -131,7 +134,15 @@ class GameWebSocketHandlerTest {
         prepareTurnTestBoard(room);
         clearInvocations(playerOne);
 
-        handler.handleTextMessage(playerOne, moveMessage(5, 0, 4, 1));
+        try (var database = org.mockito.Mockito.mockStatic(MoveDAO.class)) {
+            database.when(() -> MoveDAO.saveMove(
+                org.mockito.ArgumentMatchers.anyLong(),
+                org.mockito.ArgumentMatchers.anyLong(),
+                org.mockito.ArgumentMatchers.anyInt(),
+                org.mockito.ArgumentMatchers.anyMap()))
+                .thenReturn(true);
+            handler.handleTextMessage(playerOne, moveMessage(5, 0, 4, 1));
+        }
 
         assertEquals(GameLogic.black_player, room.getGameLogic().getCurrentPlayer());
         assertEquals(PieceType.RED, pieceType(room, 4, 1));
@@ -142,6 +153,7 @@ class GameWebSocketHandlerTest {
         WebSocketSession session = mock(WebSocketSession.class);
         Map<String, Object> attributes = new HashMap<>();
         attributes.put("username", username);
+        attributes.put("userId", 1L);
 
         when(session.getId()).thenReturn(id);
         when(session.getAttributes()).thenReturn(attributes);
@@ -184,15 +196,15 @@ class GameWebSocketHandlerTest {
     }
 
     private int pieceType(GameRoom room, int row, int column) {
-        int square = Board.toIndex(row, column);
+        int square = room.getGameLogic().getBoard().indexAt(row, column);
         return room.getGameLogic().getBoard().getPiece(square).getType();
     }
 
     private void prepareTurnTestBoard(GameRoom room) {
         Board board = room.getGameLogic().getBoard();
         board.clear();
-        board.setPiece(Board.toIndex(5, 0), new com.checkers.logic.Piece(com.checkers.logic.Piece.red));
-        board.setPiece(Board.toIndex(2, 1), new com.checkers.logic.Piece(com.checkers.logic.Piece.black));
+        board.setPiece(board.indexAt(5, 0), new com.checkers.logic.Piece(com.checkers.logic.Piece.red));
+        board.setPiece(board.indexAt(2, 1), new com.checkers.logic.Piece(com.checkers.logic.Piece.black));
     }
 
     private static final class PieceType {
@@ -200,4 +212,4 @@ class GameWebSocketHandlerTest {
         private static final int BLACK = com.checkers.logic.Piece.black;
     }
 
-}*/
+}

@@ -279,7 +279,7 @@ public class GameController {
             GameReplay replay = new GameReplay(savedMoves);
             GameLogic frame = replay.seek(position);
 
-            int[] board = new int[Board.playable_squares];
+            int[] board = new int[frame.getBoard().getCellCount()];
 
             for (int index = 0; index < board.length; index++) {
                 board[index] = frame.getBoard()

@@ -41,12 +41,14 @@ public class GameBoardController {
 
     private final ObjectMapper objectMapper = new ObjectMapper();
 
-    private static final double SQUARE_SIZE = GameStyleConfig.SQUARE_SIZE;
+    private static final double MAX_BOARD_SIZE = 500;
 
     private GameLogic gameLogic;
     private BorderPane root;
     private GridPane board;
     private Label gameStatus;
+        private ReinforcementLearningTrainer.TrainedAgent trainedAgent;
+        private boolean aiThinking;
 
     private int selectedIndex = -1;
 
@@ -59,12 +61,18 @@ public class GameBoardController {
     }
 
     public GameBoardController(GameLogic gameLogic) {
+        this(gameLogic, null);
+    }
+
+    public GameBoardController(
+            GameLogic gameLogic, ReinforcementLearningTrainer.TrainedAgent trainedAgent) {
         if (gameLogic == null) {
             throw new IllegalArgumentException(
                     "GameLogic cannot be null.");
         }
 
         this.gameLogic = gameLogic;
+        this.trainedAgent = trainedAgent;
     }
 
     /*
@@ -112,8 +120,10 @@ public class GameBoardController {
         updateGameStatus();
 
         Button newGameButton = new Button("New Game");
+        AppTheme.stylePrimaryButton(newGameButton);
         newGameButton.setDisable(onlineMode);
         Button backButton = new Button("Back to Menu");
+        AppTheme.styleSecondaryButton(backButton);
 
         newGameButton.setOnAction(event -> {
             gameLogic = new GameLogic(gameLogic.getRules());
@@ -137,6 +147,7 @@ public class GameBoardController {
 
         root = new BorderPane();
         root.setPadding(new Insets(25));
+        AppTheme.applyBackground(root);
         root.setTop(topSection);
         root.setCenter(board);
         root.setBottom(buttons);
@@ -171,14 +182,15 @@ public class GameBoardController {
 
     private StackPane createSquare(int row, int col) {
         StackPane square = new StackPane();
+        double squareSize = getSquareSize();
 
-        square.setMinSize(SQUARE_SIZE, SQUARE_SIZE);
-        square.setPrefSize(SQUARE_SIZE, SQUARE_SIZE);
-        square.setMaxSize(SQUARE_SIZE, SQUARE_SIZE);
+        square.setMinSize(squareSize, squareSize);
+        square.setPrefSize(squareSize, squareSize);
+        square.setMaxSize(squareSize, squareSize);
 
         Rectangle background = new Rectangle(
-                SQUARE_SIZE,
-                SQUARE_SIZE);
+            squareSize,
+            squareSize);
 
         background.setStrokeType(
                 javafx.scene.shape.StrokeType.INSIDE);
@@ -250,7 +262,7 @@ public class GameBoardController {
             return null;
         }
 
-        Circle circle = new Circle(SQUARE_SIZE * 0.35);
+        Circle circle = new Circle(getSquareSize() * 0.35);
 
         circle.setStrokeType(
                 javafx.scene.shape.StrokeType.INSIDE);
@@ -267,7 +279,15 @@ public class GameBoardController {
         return circle;
     }
 
+    private double getSquareSize() {
+        return Math.min(GameStyleConfig.SQUARE_SIZE,
+                MAX_BOARD_SIZE / getBoardSize());
+    }
+
     private void handleSquareClick(int clickedIndex) {
+        if (aiThinking) {
+            return;
+        }
         if (gameLogic.isGameOver()) {
             showGameOverMessage();
             return;
@@ -352,6 +372,7 @@ public class GameBoardController {
             refreshBoard();
             updateGameStatus();
             showGameOverMessage();
+            requestAiMove();
             return;
         }
 
@@ -413,6 +434,48 @@ public class GameBoardController {
         }
     }
 
+    private void requestAiMove() {
+        if (!ReinforcementLearningTrainer.shouldPlayAsAi(
+                gameLogic, trainedAgent, onlineMode, aiThinking)) {
+            return;
+        }
+
+        aiThinking = true;
+        gameStatus.setText("AI is thinking...");
+        GameLogic source = gameLogic;
+        GameLogic position = source.copy();
+        ReinforcementLearningTrainer.TrainedAgent agent = trainedAgent;
+        Thread worker = new Thread(() -> {
+            try {
+                var turn = ReinforcementLearningTrainer.selectMove(agent, position);
+                Platform.runLater(() -> {
+                    aiThinking = false;
+                    if (trainedAgent != agent
+                            || gameLogic != source || turn == null || gameLogic.isGameOver()) {
+                        return;
+                    }
+                    for (var step : turn.steps()) {
+                        if (!gameLogic.move(step.startIndex(), step.endIndex())) {
+                            gameStatus.setText("AI move could not be applied.");
+                            return;
+                        }
+                    }
+                    updateSelectionAfterMove();
+                    refreshBoard();
+                    updateGameStatus();
+                    showGameOverMessage();
+                });
+            } catch (RuntimeException exception) {
+                Platform.runLater(() -> {
+                    aiThinking = false;
+                    gameStatus.setText("AI failed: " + exception.getMessage());
+                });
+            }
+        }, "checkers-ai-move");
+        worker.setDaemon(true);
+        worker.start();
+    }
+
     private void showGameOverMessage() {
         if (!gameLogic.isGameOver() || gameOverMessageShown) {
             return;
@@ -432,6 +495,7 @@ public class GameBoardController {
             int playerNumber,
             GameWebSocketClient client) {
         onlineMode = true;
+        trainedAgent = null;
         onlineGameId = gameId;
         onlinePlayerNumber = playerNumber;
         webSocketClient = client;

@@ -1,4 +1,4 @@
-/*package com.checkers.logic;
+package com.checkers.logic;
 
 import org.junit.jupiter.api.Test;
 import static org.junit.jupiter.api.Assertions.*;
@@ -100,15 +100,13 @@ class GameLogicTest {
 
     // Converts a board row and column into the game's square index.
     private int square(int row, int column) {
-        return Board.toIndex(row, column);
+        return row * 8 + column;
     }
 
 
     private GameLogic newGameWithEmptyBoard() {
         GameLogic game = new GameLogic();
-        for (int index = 0; index < Board.playable_squares; index++) {
-            game.getBoard().removePiece(index);
-        }
+        game.getBoard().clear();
         return game;
     }
 
@@ -313,4 +311,4 @@ class GameLogicTest {
         assertFalse(game.isCurrentPlayerPiece(blackSquare));
         assertFalse(game.isCurrentPlayerPiece(square(4, 1)));
     }
-}*/
+}

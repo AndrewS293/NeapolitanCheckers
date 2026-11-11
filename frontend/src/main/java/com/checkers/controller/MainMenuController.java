@@ -30,7 +30,7 @@ public class MainMenuController {
 
         title.setStyle(
                 "-fx-font-size: 28px; " +
-                "-fx-font-weight: bold;"
+                "-fx-font-weight: bold; -fx-text-fill: " + AppTheme.INK + ";"
         );
 
         Label welcome =
@@ -42,18 +42,21 @@ public class MainMenuController {
 
         Button playButton =
                 new Button("Play Locally"); 
+        AppTheme.stylePrimaryButton(playButton);
         playButton.setOnAction(event -> {
                 Main.showVariantSelection();
         });
 
         Button playOnlineButton =
                 new Button("Play Online");
+        AppTheme.stylePrimaryButton(playOnlineButton);
         playOnlineButton.setOnAction(event -> {
                 Main.showGameLobby();
         });
                 
         Button logoutButton =
                 new Button("Logout");
+        AppTheme.styleSecondaryButton(logoutButton);
 
         logoutButton.setOnAction(event -> {
 
@@ -77,6 +80,7 @@ public class MainMenuController {
         root.setAlignment(
                 Pos.CENTER
         );
+        AppTheme.applyBackground(root);
 
         root.getChildren().addAll(
                 title,

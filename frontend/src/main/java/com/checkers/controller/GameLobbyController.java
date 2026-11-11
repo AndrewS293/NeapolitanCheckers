@@ -58,13 +58,13 @@ public class GameLobbyController {
         title.setStyle(
                 "-fx-font-size: 28px;"
                         + "-fx-font-weight: bold;"
-                        + "-fx-text-fill: white;");
+                + "-fx-text-fill: " + AppTheme.INK + ";");
 
         Label variantTitle = new Label("Choose Your Variant");
         variantTitle.setStyle(
                 "-fx-font-size: 18px;"
                         + "-fx-font-weight: bold;"
-                        + "-fx-text-fill: white;");
+                + "-fx-text-fill: " + AppTheme.INK + ";");
 
         americanVariantButton = createVariantButton(
                 "AMERICAN",
@@ -176,7 +176,7 @@ public class GameLobbyController {
 
         root.setPadding(new Insets(20));
         root.setAlignment(Pos.TOP_CENTER);
-        root.setStyle("-fx-background-color: #1D222C;");
+        AppTheme.applyBackground(root);
 
         return new Scene(root, 650, 950);
     }
@@ -203,8 +203,8 @@ public class GameLobbyController {
     }
 
     private String variantButtonStyle(boolean selected) {
-        return "-fx-background-color: #303541;"
-                + "-fx-text-fill: white;"
+        return "-fx-background-color: " + AppTheme.SURFACE + ";"
+            + "-fx-text-fill: " + AppTheme.INK + ";"
                 + "-fx-font-size: 14px;"
                 + "-fx-font-weight: bold;"
                 + "-fx-padding: 12 16 12 16;"
@@ -213,7 +213,7 @@ public class GameLobbyController {
                 + "-fx-border-width: "
                 + (selected ? "2" : "1") + ";"
                 + "-fx-border-color: "
-                + (selected ? "#D6B56D" : "#626A78") + ";";
+                + (selected ? AppTheme.ACCENT : AppTheme.BORDER) + ";";
     }
 
     private Button createVariantButton(

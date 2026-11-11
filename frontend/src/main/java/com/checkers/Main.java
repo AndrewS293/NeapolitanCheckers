@@ -1,10 +1,13 @@
 package com.checkers;
 
 import com.checkers.controller.GameBoardController;
+import com.checkers.controller.GameModeSelectionController;
+import com.checkers.controller.LocalGameOptions;
 import com.checkers.api.AuthApi;
 import com.checkers.controller.LoginController;
 import com.checkers.controller.MainMenuController;
 import com.checkers.controller.RegisterController;
+import com.checkers.controller.ReinforcementLearningTrainer;
 import com.checkers.api.GameApi;
 import com.checkers.controller.GameLobbyController;
 import com.checkers.controller.VariantSelectionController;
@@ -122,14 +125,37 @@ public class Main extends Application {
         controller.show();
     }
 
+    public static void showAiTraining() {
+        new ReinforcementLearningTrainer(stage).show();
+    }
+
+    public static void showGameModeSelection(String variantId) {
+        new GameModeSelectionController(stage, variantId).show();
+    }
+
     public static void showGameBoard(String variantId) {
+        showGameBoard(variantId, LocalGameOptions.human());
+        }
+
+    public static void showGameBoard(String variantId, LocalGameOptions options) {
         GameFactory factory =
                 new GameFactory(VariantRegistry.defaults());
 
         GameLogic game = factory.createGame(variantId);
+            ReinforcementLearningTrainer.TrainedAgent agent;
+            try {
+                    agent = options.opponent() == LocalGameOptions.Opponent.AI
+                        ? ReinforcementLearningTrainer.loadAgent(
+                            variantId, options.difficulty())
+                        : null;
+            } catch (java.io.IOException exception) {
+                new javafx.scene.control.Alert(
+                    javafx.scene.control.Alert.AlertType.ERROR,
+                    "Could not load the trained model: " + exception.getMessage()).show();
+                return;
+            }
 
-        GameBoardController controller =
-                new GameBoardController(game);
+        GameBoardController controller = new GameBoardController(game, agent);
 
         stage.setScene(controller.createScene());
         stage.setTitle("Neapolitan Checkers - " + variantId);

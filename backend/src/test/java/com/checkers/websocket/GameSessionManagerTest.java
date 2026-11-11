@@ -1,8 +1,10 @@
-/*package com.checkers.websocket;
+package com.checkers.websocket;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.web.socket.WebSocketSession;
+import com.checkers.variants.GameFactory;
+import com.checkers.variants.VariantRegistry;
 
 import java.util.List;
 
@@ -18,7 +20,7 @@ class GameSessionManagerTest {
 
     @BeforeEach
     void setUp() {
-        manager = new GameSessionManager(null);
+        manager = new GameSessionManager(new GameFactory(VariantRegistry.defaults()));
         p1 = mock(WebSocketSession.class);
         p2 = mock(WebSocketSession.class);
         when(p1.getId()).thenReturn("p1");
@@ -31,7 +33,7 @@ class GameSessionManagerTest {
     //extra tests for connections/games
     @Test
     void createRoom_StoresRoomAndReturnsIt() {
-        GameRoom room = manager.createRoom("ABC123", 10L, GameVisibility.PUBLIC, "AMERICAN", null);
+        GameRoom room = manager.createRoom("ABC123", 10L, GameVisibility.PUBLIC, null, "AMERICAN");
 
         assertNotNull(room);
         assertSame(room, manager.getRoom("ABC123"));
@@ -40,7 +42,7 @@ class GameSessionManagerTest {
 
     @Test
     void getRoomByJoinCode_ReturnsMatchingPrivateGame() {
-        manager.createRoom("GAME1", 1L, GameVisibility.PRIVATE, "AMERICAN", "JOIN99");
+        manager.createRoom("GAME1", 1L, GameVisibility.PRIVATE, "JOIN99", "AMERICAN");
 
         GameRoom room = manager.getRoomByJoinCode("JOIN99");
 
@@ -52,9 +54,9 @@ class GameSessionManagerTest {
     //A.C. 5.1 Connect to open game
     @Test
     void getOpenPublicGames() {
-        GameRoom publicWaiting = manager.createRoom("A", 1L, GameVisibility.PUBLIC, "AMERICAN", null);
-        GameRoom publicFull = manager.createRoom("B", 2L, GameVisibility.PUBLIC, "AMERICAN", null);
-        GameRoom privateWaiting = manager.createRoom("C", 3L, GameVisibility.PRIVATE, "AMERICAN", "X");
+        GameRoom publicWaiting = manager.createRoom("A", 1L, GameVisibility.PUBLIC, null, "AMERICAN");
+        GameRoom publicFull = manager.createRoom("B", 2L, GameVisibility.PUBLIC, null, "AMERICAN");
+        GameRoom privateWaiting = manager.createRoom("C", 3L, GameVisibility.PRIVATE, "X", "AMERICAN");
 
         publicWaiting.addPlayer(p1, "alice");
         publicFull.addPlayer(p1, "bob");
@@ -72,7 +74,7 @@ class GameSessionManagerTest {
     //A.C. 5.1 Connect to open game
     @Test
     void joinRoom_Success_WhenRoomHasSpace() {
-        manager.createRoom("GAME1", 1L, GameVisibility.PUBLIC, "AMERICAN", null);
+        manager.createRoom("GAME1", 1L, GameVisibility.PUBLIC, null, "AMERICAN");
 
         boolean joined = manager.joinRoom("GAME1", p1, "alice");
 
@@ -82,7 +84,7 @@ class GameSessionManagerTest {
 
     @Test
     void joinRoom_ReturnsFalse_WhenRoomIsFull() {
-        GameRoom room = manager.createRoom("GAME1", 1L, GameVisibility.PUBLIC, "AMERICAN", null);
+        GameRoom room = manager.createRoom("GAME1", 1L, GameVisibility.PUBLIC, null, "AMERICAN");
         room.addPlayer(p1, "alice");
         room.addPlayer(p2, "bob");
 
@@ -94,7 +96,7 @@ class GameSessionManagerTest {
 
     @Test
     void removePlayerFromGame_ReservesEmptyRoomForReconnect() {
-        manager.createRoom("GAME1", 1L, GameVisibility.PUBLIC, "AMERICAN", null);
+        manager.createRoom("GAME1", 1L, GameVisibility.PUBLIC, null, "AMERICAN");
         manager.joinRoom("GAME1", p1, "alice");
 
         manager.removePlayerFromGame("GAME1", p1);
@@ -113,7 +115,7 @@ class GameSessionManagerTest {
 
     @Test
     void removePlayerFromGame_LeavesRoom_WhenOtherPlayerStillPresent() {
-        manager.createRoom("GAME1", 1L, GameVisibility.PUBLIC, "AMERICAN", null);
+        manager.createRoom("GAME1", 1L, GameVisibility.PUBLIC, null, "AMERICAN");
         manager.joinRoom("GAME1", p1, "alice");
         manager.joinRoom("GAME1", p2, "bob");
 
@@ -124,4 +126,3 @@ class GameSessionManagerTest {
         assertEquals("bob", manager.getRoom("GAME1").getPlayer2Username());
     }
 }
-*/

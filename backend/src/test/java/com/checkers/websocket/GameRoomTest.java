@@ -1,8 +1,10 @@
-/*package com.checkers.websocket;
+package com.checkers.websocket;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.mock;
 
+import com.checkers.logic.GameLogic;
+import com.checkers.variants.american.AmericanRules;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.web.socket.WebSocketSession;
@@ -19,7 +21,8 @@ public class GameRoomTest {
 
     @BeforeEach
     void setUp() {
-        gameSession = new GameRoom("ABC123", 123456, GameVisibility.PUBLIC, "ABCDEF", "AMERICAN", null);
+        gameSession = new GameRoom("ABC123", 123456, GameVisibility.PUBLIC,
+            "ABCDEF", "AMERICAN", new GameLogic(new AmericanRules()));
         mockSession1 = mock(WebSocketSession.class);
         mockSession2 = mock(WebSocketSession.class);
         mockSession3 = mock(WebSocketSession.class);
@@ -58,4 +61,3 @@ public class GameRoomTest {
     }
 
 }
-*/
