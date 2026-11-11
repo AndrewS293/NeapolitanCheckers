@@ -14,6 +14,7 @@ class LocalGameAcceptanceTest {
 
     private final VariantRegistry variants = VariantRegistry.defaults();
 
+    //AC 1.1, 1.2, 1.3
     @Test
     void newGameOffersHumanAndAiOpponentSelections() {
         assertEquals(List.of(LocalGameOptions.Opponent.HUMAN,
@@ -24,6 +25,7 @@ class LocalGameAcceptanceTest {
         assertNull(LocalGameOptions.human().difficulty());
     }
 
+    //AC 2.1
     @Test
     void aiSelectionRequiresAndKeepsChosenDifficulty() {
         LocalGameOptions options = LocalGameOptions.ai(
@@ -36,6 +38,7 @@ class LocalGameAcceptanceTest {
                 () -> LocalGameOptions.ai(null));
     }
 
+    //AC 2.2, 2.3
     @Test
     void hardSearchesDeeperAndEasyMakesMoreWeakeningMoves() {
         var easy = ReinforcementLearningTrainer.Difficulty.EASY;
@@ -48,6 +51,8 @@ class LocalGameAcceptanceTest {
         assertTrue(medium.randomMoveChance() > hard.randomMoveChance());
     }
 
+
+    //AC 3.1, 3.2
     @Test
     void aiRunsOnlyOnItsConfiguredTurnAndNeverInHumanMode() {
         GameLogic game = new GameFactory(variants).createGame("SENEGALESE");
@@ -71,6 +76,7 @@ class LocalGameAcceptanceTest {
                 game, agent, true, false));
     }
 
+    //AC 4.1
     @Test
     void aiChoosesACompleteLegalMoveForSenegaleseAndOtherRegisteredVariants() {
         for (String variantId : List.of("AMERICAN", "MALAYSIAN", "THAI", "SENEGALESE")) {
@@ -113,6 +119,54 @@ class LocalGameAcceptanceTest {
                 }
                 assertEquals(GameLogic.black_player, game.getCurrentPlayer());
         }
+
+        @Test
+        void malaysianIsRegisteredAndStartsWithItsExpectedBoard() {
+                GameFactory factory = new GameFactory(variants);
+                GameLogic game = factory.createGame("MALAYSIAN");
+
+                assertEquals(12, game.getBoard().getBoardSize());
+                assertEquals(30, game.countPieces(GameLogic.red_player));
+                assertEquals(30, game.countPieces(GameLogic.black_player));
+                assertTrue(variants.getAll().stream()
+                                .anyMatch(rules -> rules.getVariantId().equals("MALAYSIAN")));
+                assertTrue(factory.getAvailableVariants().stream()
+                        .anyMatch(variant -> variant.id().equals("MALAYSIAN")));
+                assertTrue(VariantSelectionController.variantCardIds().contains("MALAYSIAN"));
+                assertEquals(6, VariantSelectionController.variantCardIds().size());
+
+                TurnMove opening = game.getRules().getLegalTurns(
+                        game.getBoard(), GameLogic.red_player).getFirst();
+                for (var step : opening.steps()) {
+                    assertTrue(game.move(step.startIndex(), step.endIndex()));
+                }
+                assertEquals(GameLogic.black_player, game.getCurrentPlayer());
+        }
+
+
+        @Test
+        void thaiIsRegisteredAndStartsWithItsExpectedBoard() {
+                GameFactory factory = new GameFactory(variants);
+                GameLogic game = factory.createGame("THAI");
+
+                assertEquals(8, game.getBoard().getBoardSize());
+                assertEquals(8, game.countPieces(GameLogic.red_player));
+                assertEquals(8, game.countPieces(GameLogic.black_player));
+                assertTrue(variants.getAll().stream()
+                                .anyMatch(rules -> rules.getVariantId().equals("THAI")));
+                assertTrue(factory.getAvailableVariants().stream()
+                        .anyMatch(variant -> variant.id().equals("THAI")));
+                assertTrue(VariantSelectionController.variantCardIds().contains("THAI"));
+                assertEquals(6, VariantSelectionController.variantCardIds().size());
+
+                TurnMove opening = game.getRules().getLegalTurns(
+                        game.getBoard(), GameLogic.red_player).getFirst();
+                for (var step : opening.steps()) {
+                    assertTrue(game.move(step.startIndex(), step.endIndex()));
+                }
+                assertEquals(GameLogic.black_player, game.getCurrentPlayer());
+        }
+
 
     private ReinforcementLearningTrainer.TrainedAgent agentFor(
             String variantId, int boardSize,
