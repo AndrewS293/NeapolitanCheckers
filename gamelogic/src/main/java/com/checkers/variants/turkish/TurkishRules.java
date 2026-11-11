@@ -17,7 +17,7 @@ public final class TurkishRules implements GameRules {
 
     public TurkishRules() {
       this(new GameConfig("TURKISH", 8, 2, 16,
-                GameConfig.SquareLayout.ALL_SQUARES_ONLY, true));
+                GameConfig.SquareLayout.ALL_SQUARES, true));
     }
 
     public TurkishRules(GameConfig config) {
@@ -60,14 +60,14 @@ public void initializeBoard(Board board) {
         if (!captures.isEmpty()) {
         int max = 0;
         for (TurnMove move : captures) {
-            if (move.getSteps().size() > max) {
-                max = move.getSteps().size();
+            if (move.steps().size() > max) {
+                max = move.steps().size();
           }
         }
 
         List<TurnMove> moves = new ArrayList<>();
         for (TurnMove move : captures) {
-            if (move.getSteps().size() == max) {
+            if (move.steps().size() == max) {
               moves.add(move);
             }
           }
@@ -207,4 +207,6 @@ public void initializeBoard(Board board) {
     @Override public boolean forfeitsPieceWhenCaptureDeclined() {
         return false;
     }
+
+    
 }
