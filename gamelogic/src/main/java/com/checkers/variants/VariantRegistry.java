@@ -5,6 +5,7 @@ import com.checkers.variants.american.AmericanRules;
 import com.checkers.variants.malaysian.MalaysianRules;
 import com.checkers.variants.senegalese.SenegaleseRules;
 import com.checkers.variants.thai.ThaiRules;
+import com.checkers.variants.turkish.TurkishRules;
 
 import java.util.Collection;
 import java.util.LinkedHashMap;
@@ -31,7 +32,9 @@ public final class VariantRegistry {
                 new AmericanRules(),
                 new MalaysianRules(),
                 new ThaiRules(),
-                new SenegaleseRules()));
+                new SenegaleseRules(),
+                new TurkishRules()
+            ));
     }
 
     public GameRules get(String variantId) {

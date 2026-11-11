@@ -7,6 +7,8 @@ import com.checkers.logic.Move.TurnMove;
 import com.checkers.rules.GameRules;
 import com.checkers.variants.american.AmericanRules;
 import com.checkers.variants.malaysian.MalaysianRules;
+import com.checkers.variants.turkish.TurkishRules;
+
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -81,6 +83,7 @@ public class GameLogic {
 
         return switch (config.getVariantId()) {
             case "AMERICAN" -> new AmericanRules(config);
+            case "TURKISH" -> new TurkishRules(config);
             case "MALAYSIAN" -> {
                 GameRules malaysian = new MalaysianRules();
                 if (!sameConfig(config, malaysian.getConfig())) {
