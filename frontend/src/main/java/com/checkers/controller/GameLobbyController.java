@@ -252,6 +252,7 @@ public class GameLobbyController {
                 JsonNode response = gameApi.createGame(visibility, selectedVariantId);
 
                 String gameId = getText(response, "gameId");
+                String databaseGameId = getText(response, "databaseGameId");
                 String joinCode = getText(response, "joinCode");
 
                 currentVariantId = selectedVariantId;
@@ -266,6 +267,9 @@ public class GameLobbyController {
                     currentGameId = gameId;
 
                     String details = "Room ID: " + gameId
+                            + (databaseGameId != null
+                                    ? "\nDatabase game ID: " + databaseGameId
+                                    : "")
                             + "\nVisibility: " + visibility
                             + "\nVariant: " + currentVariantId
                             + (joinCode != null && !joinCode.isBlank()

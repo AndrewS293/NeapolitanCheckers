@@ -9,8 +9,6 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.checkers.logic.Board;
 import com.checkers.logic.GameLogic;
-import com.checkers.logic.Board;
-import com.checkers.logic.GameLogic;
 
 // Add these imports:
 import com.checkers.database.MoveDAO;
@@ -98,7 +96,8 @@ public class GameWebSocketHandler extends TextWebSocketHandler {
                         room.getPlayerCount(),
                         room.getStatus().name(),
                         username,
-                        message
+                        message,
+                        room.getDatabaseGameId()
                 );
 
         String json;
@@ -614,11 +613,17 @@ public class GameWebSocketHandler extends TextWebSocketHandler {
                 boolean draw = temporaryGame.getGameState() == GameLogic.GameState.DRAW;
                 Long winnerUserId = draw ? null : playerId;
                 room.finish();
-                if (!GameDAO.completeGame(room.getDatabaseGameId(), winnerUserId)) {
+                boolean persisted = GameDAO.completeGame(
+                        room.getDatabaseGameId(), winnerUserId);
+                if (!persisted) {
                     System.err.println("CRITICAL: game " + gameId + " ended in memory but database completion failed.");
                 }
                 broadcast(gameId, "GAME_FINISHED", playerNumber, username,
                         draw ? "Game ended in a draw." : username + " won the game.");
+                if (!persisted) {
+                    broadcast(gameId, "PERSISTENCE_ERROR", playerNumber, username,
+                            "Game ended, but completion was not confirmed in the database.");
+                }
             }
 
             broadcast(

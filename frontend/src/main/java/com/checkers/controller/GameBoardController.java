@@ -2,6 +2,7 @@
 package com.checkers.controller;
 
 import com.checkers.Main;
+import com.checkers.api.GameApi;
 import com.checkers.logic.Board;
 import com.checkers.logic.GameLogic;
 import com.checkers.rules.GameRules;
@@ -28,7 +29,11 @@ import javafx.scene.shape.Circle;
 import javafx.scene.shape.Rectangle;
 
 import java.util.Collections;
+import java.util.ArrayList;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
+import java.util.concurrent.CompletableFuture;
 
 public class GameBoardController {
 
@@ -49,6 +54,10 @@ public class GameBoardController {
     private Label gameStatus;
         private ReinforcementLearningTrainer.TrainedAgent trainedAgent;
         private boolean aiThinking;
+        private GameApi localGameApi;
+        private boolean aiOpponent;
+        private boolean localGameSaveStarted;
+        private final List<Map<String, Object>> localGameMoves = new ArrayList<>();
 
     private int selectedIndex = -1;
 
@@ -132,6 +141,8 @@ public class GameBoardController {
             legalDestinations = Collections.emptyList();
             gameOverMessageShown = false;
             awaitingServerMove = false;
+            localGameSaveStarted = false;
+            localGameMoves.clear();
 
             refreshBoard();
             updateGameStatus();
@@ -367,7 +378,9 @@ public class GameBoardController {
             return;
         }
 
+        int movingPlayer = gameLogic.getCurrentPlayer();
         if (gameLogic.move(selectedIndex, clickedIndex)) {
+            recordLocalMove(selectedIndex, clickedIndex, movingPlayer);
             updateSelectionAfterMove();
             refreshBoard();
             updateGameStatus();
@@ -455,10 +468,12 @@ public class GameBoardController {
                         return;
                     }
                     for (var step : turn.steps()) {
+                        int movingPlayer = gameLogic.getCurrentPlayer();
                         if (!gameLogic.move(step.startIndex(), step.endIndex())) {
                             gameStatus.setText("AI move could not be applied.");
                             return;
                         }
+                        recordLocalMove(step.startIndex(), step.endIndex(), movingPlayer);
                     }
                     updateSelectionAfterMove();
                     refreshBoard();
@@ -482,12 +497,107 @@ public class GameBoardController {
         }
 
         gameOverMessageShown = true;
+        saveCompletedLocalGame();
 
         Alert alert = new Alert(Alert.AlertType.INFORMATION);
         alert.setTitle("Game Over");
         alert.setHeaderText(gameLogic.getGameResultMessage());
         alert.setContentText("Select New Game to play again.");
         alert.show();
+    }
+
+    public void configureLocalPersistence(GameApi gameApi, LocalGameOptions options) {
+        if (gameApi == null || options == null) {
+            throw new IllegalArgumentException("Local game persistence settings are required.");
+        }
+        localGameApi = gameApi;
+        aiOpponent = options.opponent() == LocalGameOptions.Opponent.AI;
+    }
+
+    private void recordLocalMove(int start, int end, int movingPlayer) {
+        if (onlineMode || localGameApi == null) {
+            return;
+        }
+        Board currentBoard = gameLogic.getBoard();
+        int fromRow = currentBoard.rowOf(start);
+        int fromCol = currentBoard.colOf(start);
+        int toRow = currentBoard.rowOf(end);
+        int toCol = currentBoard.colOf(end);
+        if (fromRow < 0 || fromCol < 0 || toRow < 0 || toCol < 0) {
+            throw new IllegalStateException("A completed move has invalid board coordinates.");
+        }
+
+        Map<String, Object> move = new LinkedHashMap<>();
+        move.put("version", 1);
+        move.put("moveNumber", localGameMoves.size() + 1);
+        move.put("start", start);
+        move.put("end", end);
+        move.put("fromRow", fromRow);
+        move.put("fromCol", fromCol);
+        move.put("toRow", toRow);
+        move.put("toCol", toCol);
+        move.put("player", movingPlayer);
+        move.put("nextPlayer", gameLogic.getCurrentPlayer());
+        move.put("turnComplete", !gameLogic.isMultiJumpInProgress());
+        move.put("gameState", gameLogic.getGameState().name());
+        move.put("opponent", aiOpponent ? "AI" : "HUMAN");
+        localGameMoves.add(move);
+    }
+
+    private void saveCompletedLocalGame() {
+        if (onlineMode || localGameApi == null || localGameSaveStarted) {
+            return;
+        }
+        localGameSaveStarted = true;
+        if (localGameMoves.isEmpty()) {
+            gameStatus.setText("Game over. No move history was available to save.");
+            return;
+        }
+
+        Integer winnerPlayer = switch (gameLogic.getGameState()) {
+            case RED_WON -> 1;
+            case BLACK_WON -> 2;
+            case DRAW -> null;
+            case IN_PROGRESS -> throw new IllegalStateException(
+                    "Cannot save a game that is still in progress.");
+        };
+        List<Map<String, Object>> completedMoves = new ArrayList<>();
+        for (Map<String, Object> move : localGameMoves) {
+            completedMoves.add(new LinkedHashMap<>(move));
+        }
+        completedMoves.getLast().put("result", gameLogic.getGameState().name());
+        String opponent = aiOpponent ? "AI" : "HUMAN";
+        gameStatus.setText("Game over. Saving game...");
+
+        CompletableFuture.runAsync(() -> {
+            try {
+                JsonNode saved = localGameApi.saveCompletedLocalGame(
+                        gameLogic.getConfig().getVariantId(),
+                        opponent,
+                        gameLogic.getGameState().name(),
+                        winnerPlayer,
+                        completedMoves);
+                long databaseGameId = saved.path("databaseGameId").asLong(-1);
+                if (databaseGameId <= 0) {
+                    throw new IllegalStateException(
+                            "The server did not return a database game ID.");
+                }
+                Platform.runLater(() -> gameStatus.setText(
+                        gameLogic.getGameResultMessage()
+                                + " Saved game ID: " + databaseGameId));
+            } catch (Exception exception) {
+                System.err.println("Could not save completed local game: "
+                        + exception.getMessage());
+                Platform.runLater(() -> {
+                    gameStatus.setText("Game over. Saving to the database failed.");
+                    Alert saveError = new Alert(Alert.AlertType.ERROR);
+                    saveError.setTitle("Game save failed");
+                    saveError.setHeaderText("The completed game was not saved.");
+                    saveError.setContentText(exception.getMessage());
+                    saveError.show();
+                });
+            }
+        });
     }
 
     public void configureOnlineGame(
@@ -556,6 +666,34 @@ public class GameBoardController {
 
                 case "GAME_STARTED" ->
                     System.out.println("Game started.");
+
+                case "GAME_FINISHED" -> {
+                    long databaseGameId = message.path("databaseGameId").asLong(-1);
+                    if (databaseGameId > 0) {
+                        String finishMessage = message.path("message").asText();
+                        Platform.runLater(() -> gameStatus.setText(
+                                finishMessage
+                                        + " Database game ID: " + databaseGameId));
+                    }
+                }
+
+                case "PERSISTENCE_ERROR" -> {
+                    long databaseGameId = message.path("databaseGameId").asLong(-1);
+                    Platform.runLater(() -> gameStatus.setText(
+                            "Game ended, but its completion was not saved. Database game ID: "
+                                    + databaseGameId));
+                }
+
+                case "RECONNECT_TIMEOUT" -> {
+                    long databaseGameId = message.path("databaseGameId").asLong(-1);
+                    boolean databaseCompleted = message.path("databaseCompleted").asBoolean();
+                    String timeoutMessage = message.path("message").asText();
+                    String completion = databaseCompleted
+                            ? "Database game ID: " + databaseGameId
+                            : "Database completion failed for game ID: " + databaseGameId;
+                    Platform.runLater(() -> gameStatus.setText(
+                            timeoutMessage + " " + completion));
+                }
 
                 case "PLAYER_JOINED" ->
                     System.out.println("Player joined: " + message);
@@ -660,8 +798,10 @@ public class GameBoardController {
             int start = currentBoard.indexAt(fromRow, fromCol);
             int end = currentBoard.indexAt(toRow, toCol);
 
+            int movingPlayer = gameLogic.getCurrentPlayer();
             if (start >= 0 && end >= 0
                     && gameLogic.move(start, end)) {
+                recordLocalMove(start, end, movingPlayer);
                 updateSelectionAfterMove();
                 refreshBoard();
                 updateGameStatus();

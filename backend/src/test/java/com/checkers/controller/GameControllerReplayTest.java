@@ -1,7 +1,10 @@
 package com.checkers.controller;
 
 import com.checkers.database.MoveDAO;
+import com.checkers.database.GameDAO;
+import com.checkers.logic.GameLogic;
 import com.checkers.websocket.GameSessionManager;
+import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ArrayNode;
 import jakarta.servlet.http.HttpSession;
@@ -13,7 +16,10 @@ import static org.mockito.Mockito.*;
 class GameControllerReplayTest {
 
     private GameController createController() {
-        return new GameController(mock(GameSessionManager.class));
+        GameSessionManager sessionManager = mock(GameSessionManager.class);
+        when(sessionManager.createGameLogic(anyString()))
+                .thenReturn(new GameLogic());
+        return new GameController(sessionManager);
     }
 
     private HttpSession loggedInSession(long userId) {
@@ -23,18 +29,35 @@ class GameControllerReplayTest {
     }
 
     private ArrayNode savedMoves() throws Exception {
-        return (ArrayNode) new ObjectMapper().readTree("""
-                [
-                    {
-                        "game_id": 8,
-                        "player_id": 13,
-                        "move_number": 1,
-                        "move_data": {
-                            "start": 40,
-                            "end": 33
-                        }
-                    }
-                ]
+        ObjectMapper mapper = new ObjectMapper();
+        GameLogic game = new GameLogic();
+        int start = -1;
+        int end = -1;
+        for (int index = 0; index < game.getBoard().getCellCount(); index++) {
+            if (!game.isCurrentPlayerPiece(index)) {
+                continue;
+            }
+            var destinations = game.getLegalDestinations(index);
+            if (!destinations.isEmpty()) {
+                start = index;
+                end = destinations.getFirst();
+                break;
+            }
+        }
+        ArrayNode moves = mapper.createArrayNode();
+        var savedMove = moves.addObject();
+        savedMove.put("move_number", 1);
+        savedMove.putObject("move_data").put("start", start).put("end", end);
+        return moves;
+    }
+
+    private JsonNode savedGame() throws Exception {
+        return new ObjectMapper().readTree("""
+                {
+                  "id": 8,
+                  "status": "COMPLETED",
+                  "variant_id": "AMERICAN"
+                }
                 """);
     }
 
@@ -56,7 +79,12 @@ class GameControllerReplayTest {
         GameController controller = createController();
         HttpSession session = loggedInSession(13);
 
-        try (var database = mockStatic(MoveDAO.class)) {
+        try (var gameDatabase = mockStatic(GameDAO.class);
+             var database = mockStatic(MoveDAO.class)) {
+            gameDatabase.when(() -> GameDAO.isParticipant(8, 13))
+                    .thenReturn(true);
+            gameDatabase.when(() -> GameDAO.getGame(8))
+                    .thenReturn(savedGame());
             database.when(() -> MoveDAO.getMovesForReplay(8))
                     .thenReturn(savedMoves());
 
@@ -91,7 +119,10 @@ class GameControllerReplayTest {
         GameController controller = createController();
         HttpSession session = loggedInSession(99);
 
-        try (var database = mockStatic(MoveDAO.class)) {
+        try (var gameDatabase = mockStatic(GameDAO.class);
+             var database = mockStatic(MoveDAO.class)) {
+            gameDatabase.when(() -> GameDAO.isParticipant(8, 99))
+                    .thenReturn(false);
             database.when(() -> MoveDAO.getMovesForReplay(8))
                     .thenReturn(savedMoves());
 
@@ -102,11 +133,16 @@ class GameControllerReplayTest {
     }
 
     @Test
-    void databaseErrorsDoNotExposeDetails() {
+    void databaseErrorsDoNotExposeDetails() throws Exception {
         GameController controller = createController();
         HttpSession session = loggedInSession(13);
 
-        try (var database = mockStatic(MoveDAO.class)) {
+        try (var gameDatabase = mockStatic(GameDAO.class);
+             var database = mockStatic(MoveDAO.class)) {
+            gameDatabase.when(() -> GameDAO.isParticipant(8, 13))
+                    .thenReturn(true);
+            gameDatabase.when(() -> GameDAO.getGame(8))
+                    .thenReturn(savedGame());
             database.when(() -> MoveDAO.getMovesForReplay(8))
                     .thenThrow(new IllegalStateException(
                             "Private database details"

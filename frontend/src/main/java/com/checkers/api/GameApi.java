@@ -7,6 +7,9 @@ import java.net.URI;
 import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
+import java.util.List;
+import java.util.LinkedHashMap;
+import java.util.Map;
 
 public class GameApi {
 
@@ -96,6 +99,28 @@ public class GameApi {
 
         return send(request);
     }
+
+    public JsonNode saveCompletedLocalGame(
+            String variantId,
+            String opponent,
+            String result,
+            Integer winnerPlayer,
+            List<Map<String, Object>> moves) throws Exception {
+        Map<String, Object> body = new LinkedHashMap<>();
+        body.put("variantId", variantId);
+        body.put("opponent", opponent);
+        body.put("result", result);
+        body.put("winnerPlayer", winnerPlayer);
+        body.put("moves", moves);
+        HttpRequest request = HttpRequest.newBuilder()
+                .uri(URI.create(BASE_URL + "/local/complete"))
+                .header("Content-Type", "application/json")
+                .header("Accept", "application/json")
+                .POST(HttpRequest.BodyPublishers.ofString(mapper.writeValueAsString(body)))
+                .build();
+        return send(request);
+    }
+
     // Retrieves all saved moves for a game.
     public JsonNode getReplay(long databaseGameId)
             throws Exception {

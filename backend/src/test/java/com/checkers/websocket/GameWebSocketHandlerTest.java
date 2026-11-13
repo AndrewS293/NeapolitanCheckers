@@ -3,6 +3,7 @@ package com.checkers.websocket;
 import com.checkers.logic.Board;
 import com.checkers.logic.GameLogic;
 import com.checkers.database.MoveDAO;
+import com.checkers.database.GameDAO;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.AfterEach;
@@ -23,6 +24,8 @@ import static org.mockito.Mockito.clearInvocations;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
+import static org.mockito.ArgumentMatchers.anyInt;
+import static org.mockito.ArgumentMatchers.anyLong;
 
 class GameWebSocketHandlerTest {
     private static final String GAME_ID = "GAME01";
@@ -31,10 +34,18 @@ class GameWebSocketHandlerTest {
     private GameWebSocketHandler handler;
     private WebSocketSession playerOne;
     private WebSocketSession playerTwo;
+    private org.mockito.MockedStatic<GameDAO> gameDatabase;
+    private org.mockito.MockedStatic<MoveDAO> moveDatabase;
     private final ObjectMapper objectMapper = new ObjectMapper();
 
     @BeforeEach
     void setUp() throws Exception {
+        gameDatabase = org.mockito.Mockito.mockStatic(GameDAO.class);
+        gameDatabase.when(() -> GameDAO.registerPlayer(
+                anyLong(), anyLong(), anyInt())).thenReturn(true);
+        moveDatabase = org.mockito.Mockito.mockStatic(MoveDAO.class);
+        moveDatabase.when(() -> MoveDAO.getLastMoveNumber(anyLong()))
+                .thenReturn(0);
         sessionManager = new GameSessionManager(new GameFactory(VariantRegistry.defaults()));
         handler = new GameWebSocketHandler(sessionManager);
         sessionManager.createRoom(GAME_ID, 1L, GameVisibility.PUBLIC, null, "AMERICAN");
@@ -48,6 +59,8 @@ class GameWebSocketHandlerTest {
     void cleanUpReconnectTimeouts() {
         sessionManager.cancelReconnectTimeout(GAME_ID, 1);
         sessionManager.cancelReconnectTimeout(GAME_ID, 2);
+        gameDatabase.close();
+        moveDatabase.close();
     }
 
     //A.C. 6.1 Disconnect from game
@@ -108,7 +121,8 @@ class GameWebSocketHandlerTest {
         assertTrue(room.isPlayerConnected(1));
         assertTrue(room.isPlayerConnected(2));
         assertEquals(GameLogic.red_player, room.getGameLogic().getCurrentPlayer());
-        assertNotNull(findMessage(playerOne, "GAME_STARTED"));
+        assertEquals(1L, findMessage(playerOne, "GAME_STARTED")
+                .path("databaseGameId").asLong());
         assertNotNull(findMessage(playerTwo, "GAME_STARTED"));
     }
 
@@ -134,15 +148,13 @@ class GameWebSocketHandlerTest {
         prepareTurnTestBoard(room);
         clearInvocations(playerOne);
 
-        try (var database = org.mockito.Mockito.mockStatic(MoveDAO.class)) {
-            database.when(() -> MoveDAO.saveMove(
-                org.mockito.ArgumentMatchers.anyLong(),
-                org.mockito.ArgumentMatchers.anyLong(),
-                org.mockito.ArgumentMatchers.anyInt(),
-                org.mockito.ArgumentMatchers.anyMap()))
-                .thenReturn(true);
-            handler.handleTextMessage(playerOne, moveMessage(5, 0, 4, 1));
-        }
+        moveDatabase.when(() -> MoveDAO.saveMove(
+            org.mockito.ArgumentMatchers.anyLong(),
+            org.mockito.ArgumentMatchers.anyLong(),
+            org.mockito.ArgumentMatchers.anyInt(),
+            org.mockito.ArgumentMatchers.anyMap()))
+            .thenReturn(true);
+        handler.handleTextMessage(playerOne, moveMessage(5, 0, 4, 1));
 
         assertEquals(GameLogic.black_player, room.getGameLogic().getCurrentPlayer());
         assertEquals(PieceType.RED, pieceType(room, 4, 1));

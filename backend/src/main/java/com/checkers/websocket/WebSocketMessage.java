@@ -1,7 +1,7 @@
 package com.checkers.websocket;
 
 // implements the structure of messages sent over WebSocket connections
-// Contains fields for type, game ID, player, number of players, status, message, and username
+// Includes both the public room code and its database game ID.
 public class WebSocketMessage {
 
     private String type;
@@ -11,6 +11,7 @@ public class WebSocketMessage {
     private String status;
     private String message;
     private String username;
+    private Long databaseGameId;
 
     public WebSocketMessage() {
     }
@@ -23,6 +24,18 @@ public class WebSocketMessage {
             String status,
             String username,
             String message) {
+        this(type, gameId, player, players, status, username, message, null);
+    }
+
+    public WebSocketMessage(
+            String type,
+            String gameId,
+            Integer player,
+            Integer players,
+            String status,
+            String username,
+            String message,
+            Long databaseGameId) {
 
         this.type = type;
         this.gameId = gameId;
@@ -31,6 +44,7 @@ public class WebSocketMessage {
         this.status = status;
         this.message = message;
         this.username = username;
+        this.databaseGameId = databaseGameId;
     }
 
     // return the type of the WebSocket message
@@ -66,5 +80,9 @@ public class WebSocketMessage {
     // return the message associated with the WebSocket message
     public String getMessage() {
         return message;
+    }
+
+    public Long getDatabaseGameId() {
+        return databaseGameId;
     }
 }

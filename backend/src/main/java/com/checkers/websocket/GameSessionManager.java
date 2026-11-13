@@ -243,6 +243,8 @@ public class GameSessionManager {
 
             String message = "{\"type\":\"RECONNECT_TIMEOUT\","
                     + "\"gameId\":\"" + gameId + "\","
+                    + "\"databaseGameId\":" + currentRoom.getDatabaseGameId() + ","
+                    + "\"databaseCompleted\":" + persisted + ","
                     + "\"player\":" + playerNumber + ","
                     + "\"status\":\"FINISHED\","
                     + "\"message\":\"The disconnected player's reconnection "

@@ -67,25 +67,50 @@ public final class GameDAO {
           catch (Exception e) { System.err.println("isParticipant failed: "+e.getMessage()); return false; }
     }
 
-    /** Completes an in-progress game. A null winner represents a draw. */
+    /** Completes an in-progress game. Null means no account-owned winner. */
     public static boolean completeGame(long gameId, Long winnerUserId) {
         if (gameId <= 0) return false;
         try {
             Map<String,Object> body = new LinkedHashMap<>();
-            body.put("status", "COMPLETED"); body.put("winner_user_id", winnerUserId); body.put("ended_at", "now()");
-            // PostgREST cannot interpret now() as SQL in JSON; use an ISO timestamp instead.
+            body.put("status", "COMPLETED");
+            body.put("winner_user_id", winnerUserId);
             body.put("ended_at", java.time.OffsetDateTime.now().toString());
-            String path = "games?id=eq."+gameId+"&status=eq.IN_PROGRESS";
+            String path = "games?id=eq."+gameId+"&status=eq.IN_PROGRESS"
+                    + "&select=status,winner_user_id";
             HttpRequest req = request(path).header("Content-Type","application/json")
                     .header("Prefer","return=representation")
                     .method("PATCH",HttpRequest.BodyPublishers.ofString(JSON.writeValueAsString(body))).build();
             HttpResponse<String> res = CLIENT.send(req,HttpResponse.BodyHandlers.ofString());
             if (res.statusCode() < 200 || res.statusCode() >= 300) { logFailure("completeGame",res); return false; }
-            // Empty response can mean already completed. Verify status to make this idempotent.
-            if (res.body() == null || res.body().isBlank() || "[]".equals(res.body().trim())) return isCompleted(gameId);
-            return true;
+            if (res.body() == null || res.body().isBlank() || "[]".equals(res.body().trim()))
+                return isCompletionPersisted(gameId, winnerUserId);
+            JsonNode rows = JSON.readTree(res.body());
+            return rows.isArray() && !rows.isEmpty()
+                    && "COMPLETED".equalsIgnoreCase(rows.get(0).path("status").asText())
+                    && winnerMatches(rows.get(0).path("winner_user_id"), winnerUserId);
         } catch (InterruptedException e) { Thread.currentThread().interrupt(); return false; }
           catch (Exception e) { System.err.println("completeGame failed for game="+gameId+": "+e.getMessage()); return false; }
+    }
+
+    private static boolean isCompletionPersisted(long gameId, Long winnerUserId) throws Exception {
+        String path = "games?select=status,winner_user_id&id=eq." + gameId + "&limit=1";
+        HttpResponse<String> res = CLIENT.send(
+                request(path).GET().build(), HttpResponse.BodyHandlers.ofString());
+        if (res.statusCode() < 200 || res.statusCode() >= 300) {
+            logFailure("verifyGameCompletion", res);
+            return false;
+        }
+        JsonNode rows = JSON.readTree(res.body());
+        return rows.isArray() && !rows.isEmpty()
+                && "COMPLETED".equalsIgnoreCase(rows.get(0).path("status").asText())
+                && winnerMatches(rows.get(0).path("winner_user_id"), winnerUserId);
+    }
+
+    private static boolean winnerMatches(JsonNode storedWinner, Long winnerUserId) {
+        return winnerUserId == null
+                ? storedWinner.isNull()
+                : storedWinner.canConvertToLong()
+                        && storedWinner.asLong() == winnerUserId;
     }
 
     public static boolean isCompleted(long gameId) {

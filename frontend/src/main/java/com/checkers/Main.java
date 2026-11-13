@@ -156,6 +156,7 @@ public class Main extends Application {
             }
 
         GameBoardController controller = new GameBoardController(game, agent);
+        controller.configureLocalPersistence(gameApi, options);
 
         stage.setScene(controller.createScene());
         stage.setTitle("Neapolitan Checkers - " + variantId);
