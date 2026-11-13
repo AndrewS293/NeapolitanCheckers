@@ -1,6 +1,7 @@
 package com.checkers.websocket;
 
 import com.checkers.logic.GameLogic;
+import com.checkers.database.GameDAO;
 import com.checkers.variants.GameFactory;
 
 import org.springframework.stereotype.Component;
@@ -116,8 +117,10 @@ public class GameSessionManager {
 
     // get a game room by its game ID
     // returns the game room if found, null otherwise
-    public GameRoom getRoom(String gameId) {
-        return rooms.get(gameId);
+    public GameRoom getRoom(String gameId) { return rooms.get(gameId); }
+
+    public GameRoom getRoomByDatabaseGameId(long databaseGameId) {
+        return rooms.values().stream().filter(r -> r.getDatabaseGameId() == databaseGameId).findFirst().orElse(null);
     }
 
 
@@ -227,6 +230,15 @@ public class GameSessionManager {
                 currentRoom.finish();
             }
 
+            // The connected opponent wins a disconnect-forfeit. A missing ID is
+            // treated as a draw only as a defensive fallback; normal WebSocket
+            // joins register both IDs before play can start.
+            Long winnerId = currentRoom.getUserId(playerNumber == 1 ? 2 : 1);
+            boolean persisted = GameDAO.completeGame(currentRoom.getDatabaseGameId(), winnerId);
+            if (!persisted) {
+                System.err.println("CRITICAL: reconnect timeout ended room " + gameId
+                        + " but database completion failed for database game " + currentRoom.getDatabaseGameId());
+            }
             reconnectTimeouts.remove(key);
 
             String message = "{\"type\":\"RECONNECT_TIMEOUT\","
@@ -291,6 +303,11 @@ public class GameSessionManager {
 
         sendToPlayer(player1, message);
         sendToPlayer(player2, message);
+    }
+
+    /** Creates a fresh game state using the configured variant factory. */
+    public GameLogic createGameLogic(String variantId) {
+        return gameFactory.createGame(variantId);
     }
 
     public boolean isSupportedVariant(String variantId) {

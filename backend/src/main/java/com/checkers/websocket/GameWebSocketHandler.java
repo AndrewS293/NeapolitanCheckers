@@ -14,6 +14,7 @@ import com.checkers.logic.GameLogic;
 
 // Add these imports:
 import com.checkers.database.MoveDAO;
+import com.checkers.database.GameDAO;
 import com.checkers.logic.Move;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -215,6 +216,33 @@ public class GameWebSocketHandler extends TextWebSocketHandler {
             return;
         }
 
+        Object rawUserId = session.getAttributes().get("userId");
+        if (!(rawUserId instanceof Number) || ((Number) rawUserId).longValue() <= 0) {
+            sendMessage(session, new WebSocketMessage("ERROR", gameId, playerNumber,
+                    room.getPlayerCount(), room.getStatus().name(), username,
+                    "Your login session is missing a valid user ID."));
+            session.close();
+            return;
+        }
+        long connectedUserId = ((Number) rawUserId).longValue();
+        if (!GameDAO.registerPlayer(room.getDatabaseGameId(), connectedUserId, playerNumber)) {
+            sendMessage(session, new WebSocketMessage("ERROR", gameId, playerNumber,
+                    room.getPlayerCount(), room.getStatus().name(), username,
+                    "Your participation could not be saved. Please reconnect."));
+            session.close();
+            return;
+        }
+        room.setPlayerUserId(playerNumber, connectedUserId);
+        // On the first join, recover the counter from persisted history rather
+        // than assuming a new in-memory room always starts at move zero.
+        if (room.getSavedMoveCount() == 0) {
+            try { room.setSavedMoveCount(MoveDAO.getLastMoveNumber(room.getDatabaseGameId())); }
+            catch (RuntimeException ex) {
+                System.err.println("Could not initialize move counter for " + gameId + ": " + ex.getMessage());
+                session.close();
+                return;
+            }
+        }
         sessionManager.cancelReconnectTimeout(gameId, playerNumber);
 
         sendMessage(
@@ -493,6 +521,13 @@ public class GameWebSocketHandler extends TextWebSocketHandler {
                 animationCues.add("CROWN");
             }
 
+                System.out.println("========== GAME STATE CHECK ==========");
+                System.out.println("Game ID: " + room.getDatabaseGameId());
+                System.out.println("Is Game Over: " + temporaryGame.isGameOver());
+                System.out.println("Game State: " + temporaryGame.getGameState());
+                System.out.println("Current Player: " + temporaryGame.getCurrentPlayer());
+                System.out.println("======================================");
+
             if (temporaryGame.isGameOver()) {
                 boolean draw = temporaryGame.getGameState()
                         == GameLogic.GameState.DRAW;
@@ -574,6 +609,17 @@ public class GameWebSocketHandler extends TextWebSocketHandler {
             }
 
             room.commitSavedMove(temporaryGame);
+
+            if (temporaryGame.isGameOver()) {
+                boolean draw = temporaryGame.getGameState() == GameLogic.GameState.DRAW;
+                Long winnerUserId = draw ? null : playerId;
+                room.finish();
+                if (!GameDAO.completeGame(room.getDatabaseGameId(), winnerUserId)) {
+                    System.err.println("CRITICAL: game " + gameId + " ended in memory but database completion failed.");
+                }
+                broadcast(gameId, "GAME_FINISHED", playerNumber, username,
+                        draw ? "Game ended in a draw." : username + " won the game.");
+            }
 
             broadcast(
                     gameId,
