@@ -65,10 +65,6 @@ public class GameApi {
                 .header("Accept", "application/json")
                 .build();
 
-        JsonNode response = send(request);
-
-        System.out.println("yippeee JOIN PUB GAME RESPONSE: " + response);
-
         return send(request);
     }
 
