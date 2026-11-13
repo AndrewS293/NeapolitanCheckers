@@ -230,23 +230,21 @@ public class GameSessionManager {
                 currentRoom.finish();
             }
 
-            // The connected opponent wins a disconnect-forfeit. A missing ID is
-            // treated as a draw only as a defensive fallback; normal WebSocket
-            // joins register both IDs before play can start.
-            Long winnerId = currentRoom.getUserId(playerNumber == 1 ? 2 : 1);
-            boolean persisted = GameDAO.completeGame(currentRoom.getDatabaseGameId(), winnerId);
+            boolean persisted = GameDAO.abandonGame(
+                    currentRoom.getDatabaseGameId());
             if (!persisted) {
                 System.err.println("CRITICAL: reconnect timeout ended room " + gameId
-                        + " but database completion failed for database game " + currentRoom.getDatabaseGameId());
+                        + " but abandonment was not confirmed for database game "
+                        + currentRoom.getDatabaseGameId());
             }
             reconnectTimeouts.remove(key);
 
             String message = "{\"type\":\"RECONNECT_TIMEOUT\","
                     + "\"gameId\":\"" + gameId + "\","
                     + "\"databaseGameId\":" + currentRoom.getDatabaseGameId() + ","
-                    + "\"databaseCompleted\":" + persisted + ","
+                    + "\"databaseAbandoned\":" + persisted + ","
                     + "\"player\":" + playerNumber + ","
-                    + "\"status\":\"FINISHED\","
+                    + "\"status\":\"ABANDONED\","
                     + "\"message\":\"The disconnected player's reconnection "
                     + "time expired. The match has ended.\"}";
 

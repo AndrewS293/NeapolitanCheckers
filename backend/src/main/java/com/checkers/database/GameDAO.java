@@ -2,6 +2,7 @@ package com.checkers.database;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.node.ArrayNode;
 import java.net.URI;
 import java.net.http.*;
 import java.time.Duration;
@@ -90,6 +91,225 @@ public final class GameDAO {
                     && winnerMatches(rows.get(0).path("winner_user_id"), winnerUserId);
         } catch (InterruptedException e) { Thread.currentThread().interrupt(); return false; }
           catch (Exception e) { System.err.println("completeGame failed for game="+gameId+": "+e.getMessage()); return false; }
+    }
+
+    /** Marks a game that ended without a completed match as abandoned. */
+    public static boolean abandonGame(long gameId) {
+        if (gameId <= 0) return false;
+        try {
+            Map<String, Object> body = Map.of(
+                    "status", "ABANDONED",
+                    "ended_at", java.time.OffsetDateTime.now().toString());
+            String path = "games?id=eq." + gameId + "&status=eq.IN_PROGRESS&select=status";
+            HttpRequest req = request(path).header("Content-Type", "application/json")
+                    .header("Prefer", "return=representation")
+                    .method("PATCH", HttpRequest.BodyPublishers.ofString(
+                            JSON.writeValueAsString(body))).build();
+            HttpResponse<String> res = CLIENT.send(
+                    req, HttpResponse.BodyHandlers.ofString());
+            if (res.statusCode() < 200 || res.statusCode() >= 300) {
+                logFailure("abandonGame", res);
+                return false;
+            }
+            if (res.body() == null || res.body().isBlank()
+                    || "[]".equals(res.body().trim())) {
+                return isGameStatus(gameId, "ABANDONED");
+            }
+            JsonNode rows = JSON.readTree(res.body());
+            return rows.isArray() && !rows.isEmpty()
+                    && "ABANDONED".equalsIgnoreCase(
+                            rows.get(0).path("status").asText());
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+            return false;
+        } catch (Exception e) {
+            System.err.println("abandonGame failed for game=" + gameId
+                    + ": " + e.getMessage());
+            return false;
+        }
+    }
+
+    /**
+     * Returns completed games for a player, including the opponent and
+     * the requesting player's outcome.
+     */
+    public static ArrayNode getCompletedGamesForPlayer(long userId) {
+        if (userId <= 0) {
+            throw new IllegalArgumentException("Invalid player ID.");
+        }
+        try {
+            Map<Long, Integer> playerNumbers = new HashMap<>();
+            for (JsonNode playerGame : getAllRows(
+                    "game_players?select=game_id,player_number&user_id=eq."
+                            + userId + "&order=game_id.desc")) {
+                long gameId = playerGame.path("game_id").asLong(-1);
+                int playerNumber = playerGame.path("player_number").asInt(0);
+                if (gameId > 0 && (playerNumber == 1 || playerNumber == 2)) {
+                    playerNumbers.put(gameId, playerNumber);
+                }
+            }
+            ArrayNode result = JSON.createArrayNode();
+            if (playerNumbers.isEmpty()) {
+                return result;
+            }
+
+            List<Long> gameIds = new ArrayList<>(playerNumbers.keySet());
+            Map<Long, JsonNode> games = new LinkedHashMap<>();
+            for (List<Long> chunk : chunks(gameIds, 100)) {
+                String path = "games?select=id,started_at,variant_id,status,"
+                        + "winner_user_id,room_code&status=eq.COMPLETED&id=in.("
+                        + joinIds(chunk) + ")&order=started_at.desc";
+                for (JsonNode game : getAllRows(path)) {
+                    long id = game.path("id").asLong(-1);
+                    if (id > 0 && "COMPLETED".equalsIgnoreCase(
+                            game.path("status").asText())) {
+                        games.put(id, game);
+                    }
+                }
+            }
+            if (games.isEmpty()) {
+                return result;
+            }
+
+            Map<Long, List<JsonNode>> participants = new HashMap<>();
+            List<Long> completedIds = new ArrayList<>(games.keySet());
+            for (List<Long> chunk : chunks(completedIds, 100)) {
+                String path = "game_players?select=game_id,user_id,player_number,"
+                        + "users(username)&game_id=in.(" + joinIds(chunk) + ")";
+                for (JsonNode participant : getAllRows(path)) {
+                    long gameId = participant.path("game_id").asLong(-1);
+                    participants.computeIfAbsent(gameId, ignored ->
+                            new ArrayList<>()).add(participant);
+                }
+            }
+
+            for (long gameId : completedIds) {
+                JsonNode game = games.get(gameId);
+                JsonNode opponent = findOpponent(
+                        participants.getOrDefault(gameId, List.of()), userId);
+                String opponentName = opponent.path("users")
+                        .path("username").asText("");
+                if (opponentName.isBlank()) {
+                    String roomCode = game.path("room_code").asText("");
+                    opponentName = roomCode.startsWith("A")
+                            ? "AI" : "Local Player";
+                }
+
+                Object winnerValue = game.path("winner_user_id").isNull()
+                        ? null : game.path("winner_user_id").asLong();
+                String outcome;
+                if (winnerValue instanceof Long winnerId) {
+                    outcome = winnerId == userId ? "WIN" : "LOSS";
+                } else {
+                    String finalState = getFinalGameState(gameId);
+                    if ("DRAW".equals(finalState)) {
+                        outcome = "TIE";
+                    } else if ("RED_WON".equals(finalState)
+                            || "BLACK_WON".equals(finalState)) {
+                        int winningPlayer = "RED_WON".equals(finalState) ? 1 : 2;
+                        outcome = playerNumbers.get(gameId) == winningPlayer
+                                ? "WIN" : "LOSS";
+                    } else {
+                        outcome = "TIE";
+                    }
+                }
+
+                var entry = result.addObject();
+                entry.put("gameId", gameId);
+                if (game.path("started_at").isMissingNode()
+                        || game.path("started_at").isNull()) {
+                    entry.putNull("startedAt");
+                } else {
+                    entry.put("startedAt", game.path("started_at").asText());
+                }
+                entry.put("opponent", opponentName);
+                entry.put("variant", game.path("variant_id").asText(""));
+                entry.put("outcome", outcome);
+            }
+            return result;
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+            throw new IllegalStateException("Game history lookup interrupted.");
+        } catch (java.io.IOException e) {
+            throw new IllegalStateException("Could not parse game history.", e);
+        }
+    }
+
+    private static JsonNode findOpponent(List<JsonNode> participants, long userId) {
+        for (JsonNode participant : participants) {
+            if (participant.path("user_id").asLong(-1) != userId) {
+                return participant;
+            }
+        }
+        return JSON.nullNode();
+    }
+
+    private static String getFinalGameState(long gameId)
+            throws InterruptedException, java.io.IOException {
+        String path = "game_moves?select=move_data&game_id=eq." + gameId
+                + "&order=move_number.desc&limit=1";
+        JsonNode rows = getJson("getFinalGameState", path);
+        return rows.isArray() && !rows.isEmpty()
+                ? rows.get(0).path("move_data").path("gameState").asText("")
+                : "";
+    }
+
+    private static boolean isGameStatus(long gameId, String expectedStatus)
+            throws InterruptedException, java.io.IOException {
+        HttpResponse<String> response = CLIENT.send(
+                request("games?select=status&id=eq." + gameId + "&limit=1")
+                        .GET().build(), HttpResponse.BodyHandlers.ofString());
+        if (response.statusCode() < 200 || response.statusCode() >= 300) {
+            logFailure("verifyGameStatus", response);
+            return false;
+        }
+        JsonNode rows = JSON.readTree(response.body());
+        return rows.isArray() && !rows.isEmpty()
+                && expectedStatus.equalsIgnoreCase(rows.get(0).path("status").asText());
+    }
+
+    private static List<JsonNode> getAllRows(String path)
+            throws InterruptedException, java.io.IOException {
+        List<JsonNode> rows = new ArrayList<>();
+        int offset = 0;
+        while (true) {
+            JsonNode page = getJson("getGameHistory",
+                    path + "&limit=1000&offset=" + offset);
+            if (!page.isArray()) {
+                throw new IllegalStateException("Invalid game history response.");
+            }
+            for (JsonNode row : page) {
+                rows.add(row);
+            }
+            if (page.size() < 1000) {
+                return rows;
+            }
+            offset += page.size();
+        }
+    }
+
+    private static JsonNode getJson(String operation, String path)
+            throws InterruptedException, java.io.IOException {
+        HttpResponse<String> response = CLIENT.send(
+                request(path).GET().build(), HttpResponse.BodyHandlers.ofString());
+        if (response.statusCode() < 200 || response.statusCode() >= 300) {
+            logFailure(operation, response);
+            throw new IllegalStateException("Could not retrieve game history.");
+        }
+        return JSON.readTree(response.body());
+    }
+
+    private static List<List<Long>> chunks(List<Long> values, int chunkSize) {
+        List<List<Long>> chunks = new ArrayList<>();
+        for (int start = 0; start < values.size(); start += chunkSize) {
+            chunks.add(values.subList(start,
+                    Math.min(start + chunkSize, values.size())));
+        }
+        return chunks;
+    }
+
+    private static String joinIds(List<Long> ids) {
+        return String.join(",", ids.stream().map(String::valueOf).toList());
     }
 
     private static boolean isCompletionPersisted(long gameId, Long winnerUserId) throws Exception {

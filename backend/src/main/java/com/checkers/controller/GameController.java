@@ -121,8 +121,9 @@ public class GameController {
         }
 
         long userId = ((Number) identity).longValue();
+        String localGameCodePrefix = "AI".equals(opponent) ? "A" : "H";
         long databaseGameId = GameDAO.createGame(
-                "L" + UUID.randomUUID().toString()
+                localGameCodePrefix + UUID.randomUUID().toString()
                         .substring(0, 5).toUpperCase(Locale.ROOT),
                 variantId);
         if (databaseGameId <= 0) {
@@ -142,9 +143,8 @@ public class GameController {
             }
         }
 
-        Long winnerUserId = winnerPlayer == null
-                || ("AI".equals(opponent) && winnerPlayer == 2)
-                ? null : userId;
+        Long winnerUserId = winnerPlayer != null && winnerPlayer == 1
+                ? userId : null;
         if (!GameDAO.completeGame(databaseGameId, winnerUserId)) {
             return ResponseEntity.status(503).body(Map.of(
                     "error", "The game was saved, but completion was not confirmed.",
@@ -153,6 +153,28 @@ public class GameController {
         return ResponseEntity.ok(Map.of(
                 "databaseGameId", databaseGameId,
                 "status", "COMPLETED"));
+    }
+
+    @GetMapping("/player/{playerId}/history")
+    public ResponseEntity<?> getCompletedGamesForPlayer(
+            @PathVariable("playerId") long playerId,
+            HttpSession session) {
+        Object identity = session.getAttribute("userId");
+        if (!(identity instanceof Number) || ((Number) identity).longValue() <= 0) {
+            return ResponseEntity.status(401).body(Map.of("error", "Please log in first."));
+        }
+        if (((Number) identity).longValue() != playerId) {
+            return ResponseEntity.status(403).body(Map.of(
+                    "error", "Game history is available only to the requesting player."));
+        }
+        try {
+            return ResponseEntity.ok(GameDAO.getCompletedGamesForPlayer(playerId));
+        } catch (IllegalStateException e) {
+            System.err.println("Game history lookup failed for player "
+                    + playerId + ": " + e.getMessage());
+            return ResponseEntity.status(503).body(Map.of(
+                    "error", "Game history is temporarily unavailable."));
+        }
     }
 
     private static Integer integerValue(Object value) {

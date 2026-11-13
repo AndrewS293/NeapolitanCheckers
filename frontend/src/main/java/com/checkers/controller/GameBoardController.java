@@ -686,13 +686,14 @@ public class GameBoardController {
 
                 case "RECONNECT_TIMEOUT" -> {
                     long databaseGameId = message.path("databaseGameId").asLong(-1);
-                    boolean databaseCompleted = message.path("databaseCompleted").asBoolean();
+                    boolean databaseAbandoned = message.path("databaseAbandoned").asBoolean();
                     String timeoutMessage = message.path("message").asText();
-                    String completion = databaseCompleted
-                            ? "Database game ID: " + databaseGameId
-                            : "Database completion failed for game ID: " + databaseGameId;
+                    String persistenceStatus = databaseAbandoned
+                            ? "Saved as abandoned. Database game ID: " + databaseGameId
+                            : "Could not save abandoned status for game ID: "
+                                    + databaseGameId;
                     Platform.runLater(() -> gameStatus.setText(
-                            timeoutMessage + " " + completion));
+                            timeoutMessage + " " + persistenceStatus));
                 }
 
                 case "PLAYER_JOINED" ->

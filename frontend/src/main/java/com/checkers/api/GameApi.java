@@ -96,6 +96,19 @@ public class GameApi {
         return send(request);
     }
 
+    public JsonNode getCompletedGamesForPlayer(long playerId)
+            throws Exception {
+        if (playerId <= 0) {
+            throw new IllegalArgumentException("Invalid player ID.");
+        }
+        HttpRequest request = HttpRequest.newBuilder()
+                .uri(URI.create(BASE_URL + "/player/" + playerId + "/history"))
+                .GET()
+                .header("Accept", "application/json")
+                .build();
+        return send(request);
+    }
+
     public JsonNode saveCompletedLocalGame(
             String variantId,
             String opponent,
