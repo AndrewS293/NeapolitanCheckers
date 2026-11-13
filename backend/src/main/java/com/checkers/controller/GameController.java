@@ -6,8 +6,6 @@ import com.checkers.logic.GameLogic;
 import com.checkers.logic.GameReplay;
 import com.checkers.websocket.*;
 import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.core.type.TypeReference;
 import jakarta.servlet.http.HttpSession;
 import org.springframework.http.*;
 import org.springframework.web.bind.annotation.*;
@@ -17,7 +15,6 @@ import java.util.stream.Collectors;
 @RestController
 @RequestMapping("/api/games")
 public class GameController {
-    private static final ObjectMapper JSON = new ObjectMapper();
     private final GameSessionManager sessionManager;
     public GameController(GameSessionManager sessionManager){
         this.sessionManager=sessionManager;
@@ -44,37 +41,38 @@ public class GameController {
     @GetMapping("/open") public ResponseEntity<?> getOpenGames(){
         return ResponseEntity.ok(sessionManager.getOpenPublicGames().stream().map(r->Map.<String,Object>of("gameId",r.getGameId(),"status",r.getStatus().name(),"players",r.getPlayerCount(),"variantId",r.getVariantId())).collect(Collectors.toList()));
     }
-    @PostMapping("/{gameId}/join") public ResponseEntity<?> joinPublicGame(@PathVariable String gameId){
+    @PostMapping("/{gameId}/join") public ResponseEntity<?> joinPublicGame(@PathVariable("gameId") String gameId){
         GameRoom r=sessionManager.getRoom(gameId);if(r==null)return ResponseEntity.status(404).body(Map.of("error","Game not found"));
         if(r.getVisibility()!=GameVisibility.PUBLIC)return ResponseEntity.status(403).body(Map.of("error","Game is not public"));
         if(r.isFull())return ResponseEntity.status(409).body(Map.of("error","Game is full"));return roomSummary(r);
     }
-    @PostMapping("/join/{joinCode}") public ResponseEntity<?> joinPrivateGame(@PathVariable String joinCode){
+    @PostMapping("/join/{joinCode}") public ResponseEntity<?> joinPrivateGame(@PathVariable("joinCode") String joinCode){
         GameRoom r=sessionManager.getRoomByJoinCode(joinCode);if(r==null)return ResponseEntity.status(404).body(Map.of("error","Invalid join code"));
         if(r.isFull())return ResponseEntity.status(409).body(Map.of("error","Game is full"));return roomSummary(r);
     }
-    @GetMapping("/{gameId}") public ResponseEntity<?> getGame(@PathVariable String gameId){GameRoom r=sessionManager.getRoom(gameId);return r==null?ResponseEntity.status(404).body(Map.of("error","Game not found")):roomSummary(r);}
+    @GetMapping("/{gameId}") public ResponseEntity<?> getGame(@PathVariable("gameId") String gameId){GameRoom r=sessionManager.getRoom(gameId);return r==null?ResponseEntity.status(404).body(Map.of("error","Game not found")):roomSummary(r);}
     private ResponseEntity<?> roomSummary(GameRoom r){return ResponseEntity.ok(Map.of("gameId",r.getGameId(),"databaseGameId",r.getDatabaseGameId(),"status",r.getStatus().name(),"players",r.getPlayerCount(),"variantId",r.getVariantId()));}
 
     @PostMapping("/local/complete")
     public ResponseEntity<?> completeLocalGame(
-            @RequestBody JsonNode request,
+            @RequestBody Map<String, Object> request,
             HttpSession session) {
         Object identity = session.getAttribute("userId");
         if (!(identity instanceof Number) || ((Number) identity).longValue() <= 0) {
             return ResponseEntity.status(401).body(Map.of("error", "Please log in first."));
         }
-        if (request == null || !request.isObject()) {
+        if (request == null) {
             return ResponseEntity.badRequest().body(Map.of("error", "A completed game is required."));
         }
 
-        String variantId = request.path("variantId").asText("");
-        String opponent = request.path("opponent").asText("");
-        String result = request.path("result").asText("");
-        JsonNode moves = request.path("moves");
-        JsonNode winnerNode = request.path("winnerPlayer");
-        Integer winnerPlayer = winnerNode.isIntegralNumber() && winnerNode.canConvertToInt()
-                ? winnerNode.asInt() : null;
+        String variantId = request.get("variantId") instanceof String value
+                ? value : "";
+        String opponent = request.get("opponent") instanceof String value
+                ? value : "";
+        String result = request.get("result") instanceof String value
+                ? value : "";
+        Object winnerValue = request.get("winnerPlayer");
+        Integer winnerPlayer = integerValue(winnerValue);
         if (!sessionManager.isSupportedVariant(variantId)) {
             return ResponseEntity.badRequest().body(Map.of("error", "Unsupported game variant."));
         }
@@ -85,7 +83,7 @@ public class GameController {
                 && !"DRAW".equals(result)) {
             return ResponseEntity.badRequest().body(Map.of("error", "A completed game result is required."));
         }
-        if (!winnerNode.isMissingNode() && !winnerNode.isNull()
+        if (winnerValue != null
                 && (winnerPlayer == null || (winnerPlayer != 1 && winnerPlayer != 2))) {
             return ResponseEntity.badRequest().body(Map.of("error", "Winner must be player 1, player 2, or null."));
         }
@@ -97,19 +95,25 @@ public class GameController {
         if (!Objects.equals(winnerPlayer, expectedWinner)) {
             return ResponseEntity.badRequest().body(Map.of("error", "Winner does not match the game result."));
         }
-        if (!moves.isArray() || moves.isEmpty()) {
+        if (!(request.get("moves") instanceof List<?> moves) || moves.isEmpty()) {
             return ResponseEntity.badRequest().body(Map.of("error", "Completed games must include their moves."));
         }
 
         List<Map<String, Object>> savedMoves = new ArrayList<>();
-        for (JsonNode move : moves) {
-            if (!move.isObject()
-                    || !move.path("start").canConvertToInt()
-                    || !move.path("end").canConvertToInt()) {
+        for (Object move : moves) {
+            if (!(move instanceof Map<?, ?> moveData)
+                    || integerValue(moveData.get("start")) == null
+                    || integerValue(moveData.get("end")) == null) {
                 return ResponseEntity.badRequest().body(Map.of("error", "Each move must include valid start and end indexes."));
             }
-            savedMoves.add(JSON.convertValue(
-                    move, new TypeReference<Map<String, Object>>() {}));
+            Map<String, Object> savedMove = new LinkedHashMap<>();
+            for (Map.Entry<?, ?> entry : moveData.entrySet()) {
+                if (!(entry.getKey() instanceof String key)) {
+                    return ResponseEntity.badRequest().body(Map.of("error", "Each move must include valid start and end indexes."));
+                }
+                savedMove.put(key, entry.getValue());
+            }
+            savedMoves.add(savedMove);
         }
         if (!result.equals(savedMoves.getLast().get("gameState"))) {
             return ResponseEntity.badRequest().body(Map.of(
@@ -151,8 +155,19 @@ public class GameController {
                 "status", "COMPLETED"));
     }
 
+    private static Integer integerValue(Object value) {
+        if (!(value instanceof Number number)) {
+            return null;
+        }
+        try {
+            return new java.math.BigDecimal(number.toString()).intValueExact();
+        } catch (NumberFormatException | ArithmeticException e) {
+            return null;
+        }
+    }
+
     @GetMapping("/{databaseGameId}/replay")
-    public ResponseEntity<?> getReplay(@PathVariable long databaseGameId,@RequestParam(value="position",required=false) Integer position,HttpSession session){
+    public ResponseEntity<?> getReplay(@PathVariable("databaseGameId") long databaseGameId,@RequestParam(value="position",required=false) Integer position,HttpSession session){
         Object identity=session.getAttribute("userId");if(!(identity instanceof Number)||((Number)identity).longValue()<=0)return ResponseEntity.status(401).body(Map.of("error","Please log in first."));
         if(databaseGameId<=0)return ResponseEntity.badRequest().body(Map.of("error","Invalid database game ID."));
         long userId=((Number)identity).longValue();

@@ -3,6 +3,7 @@ package com.checkers.controller;
 import com.checkers.database.GameDAO;
 import com.checkers.database.MoveDAO;
 import com.checkers.websocket.GameSessionManager;
+import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import jakarta.servlet.http.HttpSession;
 import org.junit.jupiter.api.Test;
@@ -23,7 +24,7 @@ class GameControllerLocalPersistenceTest {
         GameController controller = new GameController(sessionManager);
         HttpSession session = mock(HttpSession.class);
         when(session.getAttribute("userId")).thenReturn(17L);
-        var request = objectMapper.readTree("""
+        Map<String, Object> request = objectMapper.readValue("""
                 {
                   "variantId": "AMERICAN",
                   "opponent": "AI",
@@ -41,7 +42,7 @@ class GameControllerLocalPersistenceTest {
                     }
                   ]
                 }
-                """);
+                """, new TypeReference<>() {});
 
         try (var gameDatabase = mockStatic(GameDAO.class);
              var moveDatabase = mockStatic(MoveDAO.class)) {
@@ -75,7 +76,7 @@ class GameControllerLocalPersistenceTest {
         try (var gameDatabase = mockStatic(GameDAO.class);
              var moveDatabase = mockStatic(MoveDAO.class)) {
             var response = controller.completeLocalGame(
-                    objectMapper.readTree("{}"), session);
+                    Map.of(), session);
 
             assertEquals(401, response.getStatusCode().value());
             gameDatabase.verifyNoInteractions();
