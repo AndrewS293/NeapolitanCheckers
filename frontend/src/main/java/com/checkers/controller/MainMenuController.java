@@ -14,82 +14,79 @@ import javafx.scene.layout.VBox;
 
 public class MainMenuController {
 
-    private final AuthApi authApi;
+        private final AuthApi authApi;
 
-    public MainMenuController(AuthApi authApi) {
-        this.authApi = authApi;
-    }
+        public MainMenuController(AuthApi authApi) {
+                this.authApi = authApi;
+        }
 
-    public Scene createScene() {
+        public Scene createScene() {
 
-        User user =
-                SessionManager.getCurrentUser();
+                User user = SessionManager.getCurrentUser();
 
-        Label title =
-                new Label("Neapolitan Checkers");
+                Label title = new Label("Neapolitan Checkers");
 
-        title.setStyle(
-                "-fx-font-size: 28px; " +
-                "-fx-font-weight: bold; -fx-text-fill: " + AppTheme.INK + ";"
-        );
+                title.setStyle(
+                                "-fx-font-size: 28px; " +
+                                                "-fx-font-weight: bold; -fx-text-fill: " + AppTheme.INK + ";");
 
-        Label welcome =
-                new Label(
-                        "Welcome, "
-                        + user.getUsername()
-                        + "!"
-                );
+                Label welcome = new Label(
+                                "Welcome, "
+                                                + user.getUsername()
+                                                + "!");
 
-        Button playButton =
-                new Button("Play Locally"); 
-        AppTheme.stylePrimaryButton(playButton);
-        playButton.setOnAction(event -> {
-                Main.showVariantSelection();
-        });
+                Button playButton = new Button("Play Locally");
+                AppTheme.stylePrimaryButton(playButton);
+                playButton.setOnAction(event -> {
+                        Main.showVariantSelection();
+                });
 
-        Button playOnlineButton =
-                new Button("Play Online");
-        AppTheme.stylePrimaryButton(playOnlineButton);
-        playOnlineButton.setOnAction(event -> {
-                Main.showGameLobby();
-        });
-                
-        Button logoutButton =
-                new Button("Logout");
-        AppTheme.styleSecondaryButton(logoutButton);
+                Button playOnlineButton = new Button("Play Online");
+                AppTheme.stylePrimaryButton(playOnlineButton);
+                playOnlineButton.setOnAction(event -> {
+                        Main.showGameLobby();
+                });
 
-        logoutButton.setOnAction(event -> {
+                // Opens the player's completed-game history and replay screen.
+                Button replayButton = new Button("Game History and Replays");
+                AppTheme.stylePrimaryButton(replayButton);
 
-            try {
-                authApi.logout();
-            } catch (Exception ignored) {
-            }
+                replayButton.setOnAction(event -> {
+                        Main.showReplays();
+                });
 
-            SessionManager.logout();
+                Button logoutButton = new Button("Logout");
+                AppTheme.styleSecondaryButton(logoutButton);
 
-            Main.showLogin();
-        });
+                logoutButton.setOnAction(event -> {
 
-        VBox root =
-                new VBox(20);
+                        try {
+                                authApi.logout();
+                        } catch (Exception ignored) {
+                        }
 
-        root.setPadding(
-                new Insets(40)
-        );
+                        SessionManager.logout();
 
-        root.setAlignment(
-                Pos.CENTER
-        );
-        AppTheme.applyBackground(root);
+                        Main.showLogin();
+                });
 
-        root.getChildren().addAll(
-                title,
-                welcome,
-                playButton,
-                playOnlineButton,
-                logoutButton
-        );
+                VBox root = new VBox(20);
 
-        return new Scene(root);
-    }
+                root.setPadding(
+                                new Insets(40));
+
+                root.setAlignment(
+                                Pos.CENTER);
+                AppTheme.applyBackground(root);
+
+                root.getChildren().addAll(
+                                title,
+                                welcome,
+                                playButton,
+                                playOnlineButton,
+                                replayButton,
+                                logoutButton);
+
+                return new Scene(root);
+        }
 }

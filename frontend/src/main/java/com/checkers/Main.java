@@ -14,6 +14,7 @@ import com.checkers.controller.VariantSelectionController;
 import com.checkers.logic.GameLogic;
 import com.checkers.variants.GameFactory;
 import com.checkers.variants.VariantRegistry;
+import com.checkers.controller.ReplayController;
 
 import javafx.application.Application;
 import javafx.scene.Scene;
@@ -23,11 +24,9 @@ public class Main extends Application {
 
     private static Stage stage;
 
-    private static final AuthApi authApi =
-            new AuthApi();
+    private static final AuthApi authApi = new AuthApi();
 
-    private static final GameApi gameApi =
-            new GameApi(authApi);
+    private static final GameApi gameApi = new GameApi(authApi);
 
     @Override
     public void start(Stage primaryStage) {
@@ -43,8 +42,7 @@ public class Main extends Application {
 
     public static void showGameBoard() {
 
-        GameBoardController controller =
-                new GameBoardController();
+        GameBoardController controller = new GameBoardController();
 
         Scene scene = controller.createScene();
 
@@ -60,8 +58,7 @@ public class Main extends Application {
 
     public static void showLogin() {
 
-        LoginController controller =
-                new LoginController(authApi);
+        LoginController controller = new LoginController(authApi);
 
         Scene scene = controller.createScene();
 
@@ -73,8 +70,7 @@ public class Main extends Application {
 
     public static void showRegister() {
 
-        RegisterController controller =
-                new RegisterController(authApi);
+        RegisterController controller = new RegisterController(authApi);
 
         Scene scene = controller.createScene();
 
@@ -86,8 +82,7 @@ public class Main extends Application {
 
     public static void showMainMenu() {
 
-        MainMenuController controller =
-                new MainMenuController(authApi);
+        MainMenuController controller = new MainMenuController(authApi);
 
         Scene scene = controller.createScene();
 
@@ -99,8 +94,7 @@ public class Main extends Application {
 
     public static void showGameLobby() {
 
-        GameLobbyController controller =
-                new GameLobbyController();
+        GameLobbyController controller = new GameLobbyController();
 
         Scene scene = controller.createScene();
 
@@ -109,8 +103,6 @@ public class Main extends Application {
         stage.setHeight(700);
     }
 
-    
-    
     public static void showOnlineGameBoard(GameBoardController controller) {
         Scene scene = controller.createScene();
         stage.setScene(scene);
@@ -118,10 +110,8 @@ public class Main extends Application {
         stage.setHeight(900);
     }
 
-    
     public static void showVariantSelection() {
-        VariantSelectionController controller =
-                new VariantSelectionController(stage);
+        VariantSelectionController controller = new VariantSelectionController(stage);
         controller.show();
     }
 
@@ -135,25 +125,24 @@ public class Main extends Application {
 
     public static void showGameBoard(String variantId) {
         showGameBoard(variantId, LocalGameOptions.human());
-        }
+    }
 
     public static void showGameBoard(String variantId, LocalGameOptions options) {
-        GameFactory factory =
-                new GameFactory(VariantRegistry.defaults());
+        GameFactory factory = new GameFactory(VariantRegistry.defaults());
 
         GameLogic game = factory.createGame(variantId);
-            ReinforcementLearningTrainer.TrainedAgent agent;
-            try {
-                    agent = options.opponent() == LocalGameOptions.Opponent.AI
-                        ? ReinforcementLearningTrainer.loadAgent(
+        ReinforcementLearningTrainer.TrainedAgent agent;
+        try {
+            agent = options.opponent() == LocalGameOptions.Opponent.AI
+                    ? ReinforcementLearningTrainer.loadAgent(
                             variantId, options.difficulty())
-                        : null;
-            } catch (java.io.IOException exception) {
-                new javafx.scene.control.Alert(
+                    : null;
+        } catch (java.io.IOException exception) {
+            new javafx.scene.control.Alert(
                     javafx.scene.control.Alert.AlertType.ERROR,
                     "Could not load the trained model: " + exception.getMessage()).show();
-                return;
-            }
+            return;
+        }
 
         GameBoardController controller = new GameBoardController(game, agent);
         controller.configureLocalPersistence(gameApi, options);
@@ -163,7 +152,18 @@ public class Main extends Application {
         stage.show();
     }
 
+    // Opens the screen that lists the player's completed games.
+    public static void showReplays() {
+        ReplayController controller = new ReplayController(gameApi);
 
+        Scene scene = controller.createScene();
+
+        stage.setScene(scene);
+        stage.setTitle("Neapolitan Checkers - Replays");
+        stage.setWidth(900);
+        stage.setHeight(760);
+        stage.show();
+    }
 
     public static void main(String[] args) {
         launch(args);
