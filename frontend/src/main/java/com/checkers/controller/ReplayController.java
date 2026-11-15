@@ -198,6 +198,20 @@ public class ReplayController {
                     }
                 })
                 .thenAccept(history -> Platform.runLater(() -> {
+                    if (history == null || !history.isArray()) {
+                        historyTable.setDisable(false);
+                        String response = String.valueOf(history);
+                        System.err.println(
+                                "Invalid game history response: " + response);
+                        String preview = response.length() > 180
+                                ? response.substring(0, 180) + "..."
+                                : response;
+                        statusLabel.setText(
+                                "Invalid server response (expected an array): "
+                                        + preview);
+                        return;
+                    }
+
                     addGamesToTable(historyTable, history);
                     historyTable.setDisable(false);
 
@@ -210,10 +224,23 @@ public class ReplayController {
                     }
                 }))
                 .exceptionally(exception -> {
+                    Throwable cause = exception;
+                    while (cause.getCause() != null) {
+                        cause = cause.getCause();
+                    }
+                    String failureMessage = cause.getMessage();
+                    if (failureMessage == null || failureMessage.isBlank()) {
+                        failureMessage = cause.getClass().getSimpleName();
+                    }
+                    String reportedFailure = failureMessage;
+                    System.err.println(
+                            "Could not load game history: " + reportedFailure);
+
                     Platform.runLater(() -> {
                         historyTable.setDisable(false);
                         statusLabel.setText(
-                                "Could not load your game history.");
+                                "Could not load your game history: "
+                                        + reportedFailure);
                     });
 
                     return null;

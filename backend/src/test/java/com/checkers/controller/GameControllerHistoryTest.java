@@ -6,7 +6,11 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import jakarta.servlet.http.HttpSession;
 import org.junit.jupiter.api.Test;
 
+import java.util.List;
+import java.util.Map;
+
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertInstanceOf;
 import static org.mockito.Mockito.*;
 
 class GameControllerHistoryTest {
@@ -33,7 +37,11 @@ class GameControllerHistoryTest {
             var response = controller.getCompletedGamesForPlayer(17L, session);
 
             assertEquals(200, response.getStatusCode().value());
-            assertEquals(games, response.getBody());
+            List<?> history = assertInstanceOf(List.class, response.getBody());
+            assertEquals(1, history.size());
+            assertEquals(91, ((Map<?, ?>) history.get(0)).get("gameId"));
+            assertEquals("AI", ((Map<?, ?>) history.get(0)).get("opponent"));
+            assertEquals("[", new ObjectMapper().writeValueAsString(history).substring(0, 1));
         }
     }
 

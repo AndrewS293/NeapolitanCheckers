@@ -5,7 +5,10 @@ import com.checkers.database.MoveDAO;
 import com.checkers.logic.GameLogic;
 import com.checkers.logic.GameReplay;
 import com.checkers.websocket.*;
+import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.node.ArrayNode;
 import jakarta.servlet.http.HttpSession;
 import org.springframework.http.*;
 import org.springframework.web.bind.annotation.*;
@@ -15,6 +18,7 @@ import java.util.stream.Collectors;
 @RestController
 @RequestMapping("/api/games")
 public class GameController {
+    private static final ObjectMapper HISTORY_MAPPER = new ObjectMapper();
     private final GameSessionManager sessionManager;
     public GameController(GameSessionManager sessionManager){
         this.sessionManager=sessionManager;
@@ -168,7 +172,10 @@ public class GameController {
                     "error", "Game history is available only to the requesting player."));
         }
         try {
-            return ResponseEntity.ok(GameDAO.getCompletedGamesForPlayer(playerId));
+                ArrayNode games = GameDAO.getCompletedGamesForPlayer(playerId);
+                List<Map<String, Object>> history = HISTORY_MAPPER.convertValue(
+                    games, new TypeReference<List<Map<String, Object>>>() {});
+                return ResponseEntity.ok(history);
         } catch (IllegalStateException e) {
             System.err.println("Game history lookup failed for player "
                     + playerId + ": " + e.getMessage());
