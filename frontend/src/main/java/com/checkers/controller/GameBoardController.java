@@ -18,7 +18,14 @@ import javafx.geometry.Pos;
 import javafx.scene.Scene;
 import javafx.scene.control.Alert;
 import javafx.scene.control.Button;
+import javafx.scene.control.ButtonType;
+import javafx.scene.control.Dialog;
 import javafx.scene.control.Label;
+import javafx.scene.control.ScrollPane;
+import javafx.scene.control.Separator;
+import javafx.scene.control.ToggleButton;
+import javafx.scene.control.ToggleGroup;
+import javafx.scene.control.ButtonBar;
 import javafx.scene.layout.BorderPane;
 import javafx.scene.layout.GridPane;
 import javafx.scene.layout.HBox;
@@ -27,6 +34,12 @@ import javafx.scene.layout.VBox;
 import javafx.scene.paint.Color;
 import javafx.scene.shape.Circle;
 import javafx.scene.shape.Rectangle;
+import javafx.animation.FadeTransition;
+import javafx.animation.ParallelTransition;
+import javafx.animation.PauseTransition;
+import javafx.animation.ScaleTransition;
+import javafx.animation.TranslateTransition;
+import javafx.util.Duration;
 
 import java.util.Collections;
 import java.util.ArrayList;
@@ -36,6 +49,14 @@ import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 
 public class GameBoardController {
+
+    private record MoveFeedback(
+            int start,
+            int end,
+            boolean red,
+            boolean wasKing,
+            boolean promoted,
+            List<Integer> captured) { }
 
     private boolean onlineMode = false;
     private boolean awaitingServerMove = false;
@@ -134,23 +155,15 @@ public class GameBoardController {
         Button backButton = new Button("Back to Menu");
         AppTheme.styleSecondaryButton(backButton);
 
-        newGameButton.setOnAction(event -> {
-            gameLogic = new GameLogic(gameLogic.getRules());
+        Button rulesButton = new Button("Rules / Help");
+        AppTheme.styleSecondaryButton(rulesButton);
+        rulesButton.setOnAction(event -> showRulesTutorial());
 
-            selectedIndex = -1;
-            legalDestinations = Collections.emptyList();
-            gameOverMessageShown = false;
-            awaitingServerMove = false;
-            localGameSaveStarted = false;
-            localGameMoves.clear();
-
-            refreshBoard();
-            updateGameStatus();
-        });
+        newGameButton.setOnAction(event -> startNewGame());
 
         backButton.setOnAction(event -> Main.showMainMenu());
 
-        HBox buttons = new HBox(15, newGameButton, backButton);
+        HBox buttons = new HBox(15, rulesButton, newGameButton, backButton);
         buttons.setAlignment(Pos.CENTER);
 
         VBox topSection = new VBox(10, title, gameStatus);
@@ -295,6 +308,18 @@ public class GameBoardController {
                 MAX_BOARD_SIZE / getBoardSize());
     }
 
+    private void startNewGame() {
+        gameLogic = new GameLogic(gameLogic.getRules());
+        selectedIndex = -1;
+        legalDestinations = Collections.emptyList();
+        gameOverMessageShown = false;
+        awaitingServerMove = false;
+        localGameSaveStarted = false;
+        localGameMoves.clear();
+        refreshBoard();
+        updateGameStatus();
+    }
+
     private void handleSquareClick(int clickedIndex) {
         if (aiThinking) {
             return;
@@ -378,14 +403,19 @@ public class GameBoardController {
             return;
         }
 
+        Board beforeMove = getCurrentBoard().copy();
         int movingPlayer = gameLogic.getCurrentPlayer();
         if (gameLogic.move(selectedIndex, clickedIndex)) {
+            MoveFeedback feedback = createMoveFeedback(
+                    beforeMove, selectedIndex, clickedIndex);
             recordLocalMove(selectedIndex, clickedIndex, movingPlayer);
             updateSelectionAfterMove();
             refreshBoard();
+            animateMove(feedback, () -> {
+                showGameOverMessage();
+                requestAiMove();
+            });
             updateGameStatus();
-            showGameOverMessage();
-            requestAiMove();
             return;
         }
 
@@ -413,6 +443,297 @@ public class GameBoardController {
         board = createBoard();
         board.setAlignment(Pos.CENTER);
         root.setCenter(board);
+    }
+
+    private MoveFeedback createMoveFeedback(Board before, int start, int end) {
+        Piece movingPiece = before.getPiece(start);
+        Piece movedPiece = getCurrentBoard().getPiece(end);
+        if (movingPiece == null || movingPiece.isEmpty()
+                || movedPiece == null || movedPiece.isEmpty()) {
+            return null;
+        }
+
+        List<Integer> captured = new ArrayList<>();
+        for (int index = 0; index < before.getCellCount(); index++) {
+            Piece previous = before.getPiece(index);
+            Piece current = getCurrentBoard().getPiece(index);
+            if (index != start && previous != null && !previous.isEmpty()
+                    && current != null && current.isEmpty()
+                    && previous.isRed() != movingPiece.isRed()) {
+                captured.add(index);
+            }
+        }
+
+        return new MoveFeedback(
+                start,
+                end,
+                movingPiece.isRed(),
+                movingPiece.isKing(),
+                movedPiece.isKing(),
+                captured);
+    }
+
+    private void animateMove(MoveFeedback feedback) {
+        animateMove(feedback, () -> { });
+    }
+
+    private void animateMove(MoveFeedback feedback, Runnable onFinished) {
+        if (feedback == null || board == null) {
+            onFinished.run();
+            return;
+        }
+
+        int size = getBoardSize();
+        int fromRow = getCurrentBoard().rowOf(feedback.start());
+        int fromCol = getCurrentBoard().colOf(feedback.start());
+        int toRow = getCurrentBoard().rowOf(feedback.end());
+        int toCol = getCurrentBoard().colOf(feedback.end());
+        StackPane destination = findSquare(toRow, toCol);
+        Circle destinationPiece = findPieceCircle(destination);
+        if (destinationPiece == null) {
+            onFinished.run();
+            return;
+        }
+
+        Circle movingPiece = new Circle(getSquareSize() * 0.35);
+        movingPiece.setFill(feedback.red()
+                ? (isSenegaleseVariant()
+                        ? Color.web("#CE1126")
+                        : GameStyleConfig.RED_PIECE_COLOR)
+                : (isSenegaleseVariant()
+                        ? Color.web("#FCD116")
+                        : GameStyleConfig.BLACK_PIECE_COLOR));
+        movingPiece.setStroke(feedback.promoted()
+                ? Color.GOLD : GameStyleConfig.PIECE_OUTLINE_COLOR);
+        movingPiece.setStrokeWidth(feedback.promoted() ? 4 : 2);
+        movingPiece.setMouseTransparent(true);
+        board.add(movingPiece, fromCol, fromRow);
+        destinationPiece.setOpacity(0);
+
+        TranslateTransition travel = new TranslateTransition(
+                Duration.millis(feedback.captured().isEmpty() ? 220 : 300),
+                movingPiece);
+        travel.setByX((toCol - fromCol) * getSquareSize());
+        travel.setByY((toRow - fromRow) * getSquareSize());
+
+        List<FadeTransition> captureEffects = new ArrayList<>();
+        for (int capturedIndex : feedback.captured()) {
+            int row = getCurrentBoard().rowOf(capturedIndex);
+            int col = getCurrentBoard().colOf(capturedIndex);
+            StackPane capturedSquare = findSquare(row, col);
+            Circle flash = new Circle(getSquareSize() * 0.28);
+            flash.setFill(Color.rgb(220, 48, 48, 0.8));
+            flash.setMouseTransparent(true);
+            capturedSquare.getChildren().add(flash);
+            FadeTransition fade = new FadeTransition(Duration.millis(280), flash);
+            fade.setFromValue(0.9);
+            fade.setToValue(0);
+            fade.setOnFinished(event -> capturedSquare.getChildren().remove(flash));
+            captureEffects.add(fade);
+        }
+
+        ParallelTransition animation = new ParallelTransition();
+        animation.getChildren().add(travel);
+        animation.getChildren().addAll(captureEffects);
+        if (feedback.promoted() || feedback.wasKing()) {
+            ScaleTransition flourish = new ScaleTransition(
+                    Duration.millis(300), movingPiece);
+            flourish.setFromX(1);
+            flourish.setFromY(1);
+            flourish.setToX(1.25);
+            flourish.setToY(1.25);
+            flourish.setAutoReverse(true);
+            flourish.setCycleCount(2);
+            animation.getChildren().add(flourish);
+        }
+        animation.setOnFinished(event -> {
+            board.getChildren().remove(movingPiece);
+            destinationPiece.setOpacity(1);
+            onFinished.run();
+        });
+        animation.play();
+    }
+
+    private StackPane findSquare(int row, int col) {
+        for (var child : board.getChildren()) {
+            int childRow = GridPane.getRowIndex(child) == null
+                    ? 0 : GridPane.getRowIndex(child);
+            int childCol = GridPane.getColumnIndex(child) == null
+                    ? 0 : GridPane.getColumnIndex(child);
+            if (childRow == row && childCol == col
+                    && child instanceof StackPane square) {
+                return square;
+            }
+        }
+        return null;
+    }
+
+    private Circle findPieceCircle(StackPane square) {
+        if (square == null) {
+            return null;
+        }
+        return square.getChildren().stream()
+                .filter(Circle.class::isInstance)
+                .map(Circle.class::cast)
+                .filter(circle -> circle.getRadius() > 9)
+                .findFirst()
+                .orElse(null);
+    }
+
+    private void showRulesTutorial() {
+        Dialog<ButtonType> dialog = new Dialog<>();
+        dialog.setTitle("How to Play");
+        dialog.setHeaderText(gameLogic.getRules().getDisplayName() + " Rules");
+        dialog.getDialogPane().getButtonTypes().add(ButtonType.CLOSE);
+
+        Label ruleSummary = new Label(getVariantRulesSummary());
+        ruleSummary.setWrapText(true);
+        ruleSummary.setStyle("-fx-font-size: 14px; -fx-line-spacing: 3px;");
+
+        Label demoTitle = new Label("Move examples");
+        demoTitle.setStyle("-fx-font-size: 17px; -fx-font-weight: bold;");
+        GridPane demoBoard = new GridPane();
+        demoBoard.setAlignment(Pos.CENTER);
+        demoBoard.setHgap(0);
+        demoBoard.setVgap(0);
+        HBox demos = new HBox(8);
+        demos.setAlignment(Pos.CENTER);
+        ToggleGroup demoGroup = new ToggleGroup();
+        String[] names = {"Move", "Capture", "Become a king", "King move"};
+        for (int demo = 0; demo < names.length; demo++) {
+            ToggleButton button = new ToggleButton(names[demo]);
+            button.setToggleGroup(demoGroup);
+            demos.getChildren().add(button);
+            if (demo == 0) {
+                button.setSelected(true);
+            }
+        }
+        Label demoDescription = new Label();
+        demoDescription.setWrapText(true);
+        showTutorialDemo(demoBoard, 0, demoDescription);
+        for (var button : demos.getChildren()) {
+            if (button instanceof ToggleButton toggle) {
+                int demoIndex = demos.getChildren().indexOf(button);
+                toggle.setOnAction(event ->
+                        showTutorialDemo(demoBoard, demoIndex, demoDescription));
+            }
+        }
+
+        VBox content = new VBox(
+                12, ruleSummary, new Separator(), demoTitle, demos,
+                demoBoard, demoDescription);
+        content.setPadding(new Insets(8));
+        ScrollPane scrollPane = new ScrollPane(content);
+        scrollPane.setFitToWidth(true);
+        scrollPane.setPrefViewportHeight(500);
+        dialog.getDialogPane().setContent(scrollPane);
+        dialog.getDialogPane().setPrefWidth(590);
+        dialog.showAndWait();
+    }
+
+    private String getVariantRulesSummary() {
+        String common = "TURKISH".equals(gameLogic.getConfig().getVariantId())
+            ? "Take turns moving one piece to an open square. A capture removes an opponent "
+                + "piece; reaching the far edge promotes a piece to king.\n\n"
+            : "Take turns moving one piece diagonally to an open playable square. "
+                + "A jump lands beyond an opponent piece and captures it. "
+                + "Pieces reaching the far edge are promoted to kings.\n\n";
+        return common + switch (gameLogic.getConfig().getVariantId()) {
+            case "AMERICAN" -> "American Checkers: captures are mandatory. Regular pieces move "
+                    + "and capture forward; kings move one diagonal square in either direction.";
+            case "MALAYSIAN" -> "Malaysian Draughts: kings can travel along a diagonal. "
+                    + "Choose a longest available capture sequence; declining a capture can forfeit a piece.";
+            case "SENEGALESE" -> "Senegalese Checkers: captures may go backward, kings travel "
+                    + "along diagonals, and the greatest available capture sequence is required.";
+            case "THAI" -> "Thai Draughts: captures are mandatory and a piece must continue "
+                    + "capturing while another jump is available. Promotion ends the capture turn.";
+            case "TURKISH" -> "Turkish Draughts uses orthogonal movement rather than diagonal "
+                    + "movement. Regular pieces advance forward; kings travel along rows and columns.";
+            default -> "Movement and capture details depend on this variant. The highlighted "
+                    + "squares on the board show the legal choices for the selected piece.";
+        };
+    }
+
+    private void showTutorialDemo(
+            GridPane demoBoard, int demo, Label description) {
+        demoBoard.getChildren().clear();
+        StackPane[][] squares = new StackPane[4][4];
+        double cellSize = 42;
+        for (int row = 0; row < 4; row++) {
+            for (int col = 0; col < 4; col++) {
+                StackPane square = new StackPane();
+                square.setMinSize(cellSize, cellSize);
+                square.setPrefSize(cellSize, cellSize);
+                square.setMaxSize(cellSize, cellSize);
+                Rectangle background = new Rectangle(cellSize, cellSize);
+                background.setFill((row + col) % 2 == 0
+                        ? Color.web("#E8D9B5") : Color.web("#76543B"));
+                square.getChildren().add(background);
+                squares[row][col] = square;
+                demoBoard.add(square, col, row);
+            }
+        }
+
+        int startRow = demo == 2 ? 1 : (demo == 3 ? 2 : 3);
+        int startCol = demo == 2 ? 2 : (demo == 3 ? 1 : 0);
+        int endRow = demo == 2 ? 0 : (demo == 3 ? 1 : (demo == 1 ? 1 : 2));
+        int endCol = demo == 2 ? 3 : (demo == 3 ? 2 : (demo == 1 ? 2 : 1));
+        int middleRow = (startRow + endRow) / 2;
+        int middleCol = (startCol + endCol) / 2;
+        if (demo == 1) {
+            Circle opponent = tutorialPiece(false, false);
+            squares[middleRow][middleCol].getChildren().add(opponent);
+        }
+
+        Circle actor = tutorialPiece(true, demo == 3);
+        squares[startRow][startCol].getChildren().add(actor);
+        Circle animatedActor = tutorialPiece(true, demo == 3);
+        demoBoard.add(animatedActor, startCol, startRow);
+        actor.setOpacity(0);
+
+        description.setText(switch (demo) {
+            case 1 -> "A capture jumps over an opposing piece; the jumped piece is removed.";
+            case 2 -> "Reach the far edge to become a king. The gold rim marks the promotion.";
+            case 3 -> "Kings move diagonally. Some variants allow kings to travel several squares.";
+            default -> "Choose a highlighted legal destination to move one square.";
+        });
+
+        TranslateTransition move = new TranslateTransition(
+                Duration.millis(550), animatedActor);
+        move.setByX((endCol - startCol) * cellSize);
+        move.setByY((endRow - startRow) * cellSize);
+        move.setOnFinished(event -> {
+            demoBoard.getChildren().remove(animatedActor);
+            if (demo == 1) {
+                squares[middleRow][middleCol].getChildren().remove(1);
+            }
+            squares[startRow][startCol].getChildren().remove(actor);
+            animatedActor.setTranslateX(0);
+            animatedActor.setTranslateY(0);
+            if (demo == 2) {
+                animatedActor.setStroke(Color.GOLD);
+                animatedActor.setStrokeWidth(4);
+                ScaleTransition crown = new ScaleTransition(
+                        Duration.millis(220), animatedActor);
+                crown.setFromX(1);
+                crown.setFromY(1);
+                crown.setToX(1.25);
+                crown.setToY(1.25);
+                crown.setAutoReverse(true);
+                crown.setCycleCount(2);
+                crown.play();
+            }
+            squares[endRow][endCol].getChildren().add(animatedActor);
+        });
+        move.play();
+    }
+
+    private Circle tutorialPiece(boolean red, boolean king) {
+        Circle piece = new Circle(13);
+        piece.setFill(red ? Color.web("#CE1126") : Color.web("#242424"));
+        piece.setStroke(king ? Color.GOLD : Color.WHITE);
+        piece.setStrokeWidth(king ? 4 : 2);
+        return piece;
     }
 
     private void updateSelectionAfterMove() {
@@ -462,23 +783,12 @@ public class GameBoardController {
             try {
                 var turn = ReinforcementLearningTrainer.selectMove(agent, position);
                 Platform.runLater(() -> {
-                    aiThinking = false;
                     if (trainedAgent != agent
                             || gameLogic != source || turn == null || gameLogic.isGameOver()) {
+                        aiThinking = false;
                         return;
                     }
-                    for (var step : turn.steps()) {
-                        int movingPlayer = gameLogic.getCurrentPlayer();
-                        if (!gameLogic.move(step.startIndex(), step.endIndex())) {
-                            gameStatus.setText("AI move could not be applied.");
-                            return;
-                        }
-                        recordLocalMove(step.startIndex(), step.endIndex(), movingPlayer);
-                    }
-                    updateSelectionAfterMove();
-                    refreshBoard();
-                    updateGameStatus();
-                    showGameOverMessage();
+                    applyAiTurnStep(turn.steps(), 0, agent, source);
                 });
             } catch (RuntimeException exception) {
                 Platform.runLater(() -> {
@@ -491,6 +801,50 @@ public class GameBoardController {
         worker.start();
     }
 
+    private void applyAiTurnStep(
+            List<com.checkers.logic.Move.MoveStep> steps,
+            int stepIndex,
+            ReinforcementLearningTrainer.TrainedAgent agent,
+            GameLogic source) {
+        if (trainedAgent != agent || gameLogic != source) {
+            aiThinking = false;
+            return;
+        }
+        if (gameLogic.isGameOver()) {
+            aiThinking = false;
+            updateGameStatus();
+            showGameOverMessage();
+            return;
+        }
+        if (stepIndex >= steps.size()) {
+            aiThinking = false;
+            updateGameStatus();
+            showGameOverMessage();
+            return;
+        }
+
+        var step = steps.get(stepIndex);
+        int movingPlayer = gameLogic.getCurrentPlayer();
+        Board beforeMove = getCurrentBoard().copy();
+        if (!gameLogic.move(step.startIndex(), step.endIndex())) {
+            aiThinking = false;
+            gameStatus.setText("AI move could not be applied.");
+            return;
+        }
+        MoveFeedback feedback = createMoveFeedback(
+                beforeMove, step.startIndex(), step.endIndex());
+        recordLocalMove(step.startIndex(), step.endIndex(), movingPlayer);
+        updateSelectionAfterMove();
+        refreshBoard();
+        animateMove(feedback, () -> {
+            PauseTransition nextStep = new PauseTransition(Duration.millis(120));
+            nextStep.setOnFinished(event ->
+                applyAiTurnStep(steps, stepIndex + 1, agent, source));
+            nextStep.play();
+        });
+        updateGameStatus();
+    }
+
     private void showGameOverMessage() {
         if (!gameLogic.isGameOver() || gameOverMessageShown) {
             return;
@@ -499,11 +853,49 @@ public class GameBoardController {
         gameOverMessageShown = true;
         saveCompletedLocalGame();
 
-        Alert alert = new Alert(Alert.AlertType.INFORMATION);
-        alert.setTitle("Game Over");
-        alert.setHeaderText(gameLogic.getGameResultMessage());
-        alert.setContentText("Select New Game to play again.");
-        alert.show();
+        boolean draw = gameLogic.getGameState() == GameLogic.GameState.DRAW;
+        boolean redWon = gameLogic.getGameState() == GameLogic.GameState.RED_WON;
+        boolean localPlayerWon = onlineMode
+                ? (onlinePlayerNumber == 1) == redWon
+                : !aiOpponent || redWon;
+        String headline = draw
+                ? "Draw"
+                : onlineMode || aiOpponent
+                        ? (localPlayerWon ? "Victory!" : "Defeat")
+                        : (redWon ? "Red wins!" : "Black wins!");
+
+        Label result = new Label(headline);
+        result.setStyle("-fx-font-size: 30px; -fx-font-weight: bold;");
+        Label details = new Label(gameLogic.getGameResultMessage());
+        details.setStyle("-fx-font-size: 16px;");
+        VBox resultContent = new VBox(12, result, details);
+        resultContent.setAlignment(Pos.CENTER);
+        resultContent.setPadding(new Insets(24, 40, 24, 40));
+
+        ButtonType playAgain = new ButtonType("New Game", ButtonBar.ButtonData.OK_DONE);
+        ButtonType mainMenu = new ButtonType("Main Menu", ButtonBar.ButtonData.CANCEL_CLOSE);
+        Dialog<ButtonType> dialog = new Dialog<>();
+        dialog.setTitle("Game Over");
+        dialog.getDialogPane().getButtonTypes().addAll(playAgain, mainMenu);
+        dialog.getDialogPane().setContent(resultContent);
+        dialog.setOnShown(event -> {
+            result.setScaleX(0.7);
+            result.setScaleY(0.7);
+            result.setOpacity(0);
+            ScaleTransition scale = new ScaleTransition(Duration.millis(420), result);
+            scale.setToX(1);
+            scale.setToY(1);
+            FadeTransition fade = new FadeTransition(Duration.millis(420), result);
+            fade.setToValue(1);
+            new ParallelTransition(scale, fade).play();
+        });
+        dialog.showAndWait().ifPresent(choice -> {
+            if (choice == playAgain) {
+                startNewGame();
+            } else if (choice == mainMenu) {
+                Main.showMainMenu();
+            }
+        });
     }
 
     public void configureLocalPersistence(GameApi gameApi, LocalGameOptions options) {
@@ -757,15 +1149,17 @@ public class GameBoardController {
                     return;
                 }
 
+                Board beforeMove = currentBoard.copy();
                 boolean moved = gameLogic.move(start, end);
 
                 if (moved) {
+                    MoveFeedback feedback = createMoveFeedback(beforeMove, start, end);
                     selectedIndex = -1;
                     legalDestinations = Collections.emptyList();
 
                     refreshBoard();
+                    animateMove(feedback, this::showGameOverMessage);
                     updateGameStatus();
-                    showGameOverMessage();
 
                     System.out.println("Online move applied successfully.");
                 } else {
@@ -800,13 +1194,15 @@ public class GameBoardController {
             int end = currentBoard.indexAt(toRow, toCol);
 
             int movingPlayer = gameLogic.getCurrentPlayer();
+            Board beforeMove = currentBoard.copy();
             if (start >= 0 && end >= 0
                     && gameLogic.move(start, end)) {
+                MoveFeedback feedback = createMoveFeedback(beforeMove, start, end);
                 recordLocalMove(start, end, movingPlayer);
                 updateSelectionAfterMove();
                 refreshBoard();
+                animateMove(feedback, this::showGameOverMessage);
                 updateGameStatus();
-                showGameOverMessage();
             }
 
             return;
