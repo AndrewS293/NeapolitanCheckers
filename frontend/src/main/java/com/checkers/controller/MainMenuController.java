@@ -2,6 +2,7 @@ package com.checkers.controller;
 
 import com.checkers.Main;
 import com.checkers.api.AuthApi;
+import com.checkers.localization.AppText;
 import com.checkers.model.User;
 import com.checkers.session.SessionManager;
 
@@ -24,38 +25,36 @@ public class MainMenuController {
 
                 User user = SessionManager.getCurrentUser();
 
-                Label title = new Label("Neapolitan Checkers");
+                Label title = new Label(AppText.text("Neapolitan Checkers"));
 
                 title.setStyle(
                                 "-fx-font-size: 28px; " +
                                                 "-fx-font-weight: bold; -fx-text-fill: " + AppTheme.INK + ";");
 
                 Label welcome = new Label(
-                                "Welcome, "
-                                                + user.getUsername()
-                                                + "!");
+                                AppText.text("Welcome, {0}!", user.getUsername()));
 
-                Button playButton = new Button("Play Locally");
+                Button playButton = new Button(AppText.text("Play Locally"));
                 AppTheme.stylePrimaryButton(playButton);
                 playButton.setOnAction(event -> {
                         Main.showVariantSelection();
                 });
 
-                Button playOnlineButton = new Button("Play Online");
+                Button playOnlineButton = new Button(AppText.text("Play Online"));
                 AppTheme.stylePrimaryButton(playOnlineButton);
                 playOnlineButton.setOnAction(event -> {
                         Main.showGameLobby();
                 });
 
                 // Opens the player's completed-game history and replay screen.
-                Button replayButton = new Button("Game History and Replays");
+                Button replayButton = new Button(AppText.text("Game History and Replays"));
                 AppTheme.stylePrimaryButton(replayButton);
 
                 replayButton.setOnAction(event -> {
                         Main.showReplays();
                 });
 
-                Button logoutButton = new Button("Logout");
+                Button logoutButton = new Button(AppText.text("Logout"));
                 AppTheme.styleSecondaryButton(logoutButton);
 
                 logoutButton.setOnAction(event -> {
@@ -82,6 +81,8 @@ public class MainMenuController {
                 root.getChildren().addAll(
                                 title,
                                 welcome,
+                                new Label(AppText.text("Language")),
+                                AppText.languagePicker(Main::showMainMenu),
                                 playButton,
                                 playOnlineButton,
                                 replayButton,

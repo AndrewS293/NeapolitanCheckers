@@ -114,13 +114,15 @@ public class GameApi {
             String opponent,
             String result,
             Integer winnerPlayer,
-            List<Map<String, Object>> moves) throws Exception {
+            List<Map<String, Object>> moves,
+            boolean timedOut) throws Exception {
         Map<String, Object> body = new LinkedHashMap<>();
         body.put("variantId", variantId);
         body.put("opponent", opponent);
         body.put("result", result);
         body.put("winnerPlayer", winnerPlayer);
         body.put("moves", moves);
+        body.put("reason", timedOut ? "TIMEOUT" : "RULES");
         HttpRequest request = HttpRequest.newBuilder()
                 .uri(URI.create(BASE_URL + "/local/complete"))
                 .header("Content-Type", "application/json")

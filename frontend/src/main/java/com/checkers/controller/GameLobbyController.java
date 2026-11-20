@@ -2,6 +2,7 @@ package com.checkers.controller;
 
 import com.checkers.Main;
 import com.checkers.api.GameApi;
+import com.checkers.localization.AppText;
 import com.checkers.websocket.GameWebSocketClient;
 import com.fasterxml.jackson.databind.JsonNode;
 
@@ -28,8 +29,8 @@ public class GameLobbyController {
 
     private final GameApi gameApi;
 
-    private final Label statusLabel = new Label("Choose a multiplayer option.");
-    private final Label roomLabel = new Label("No room selected.");
+    private final Label statusLabel = new Label(AppText.text("Choose a multiplayer option."));
+    private final Label roomLabel = new Label(AppText.text("No room selected."));
 
     private final ListView<String> gamesList = new ListView<>();
     private final TextField joinCodeField = new TextField();
@@ -54,13 +55,13 @@ public class GameLobbyController {
     }
 
     public Scene createScene() {
-        Label title = new Label("Online Multiplayer");
+        Label title = new Label(AppText.text("Online Multiplayer"));
         title.setStyle(
                 "-fx-font-size: 28px;"
                         + "-fx-font-weight: bold;"
                 + "-fx-text-fill: " + AppTheme.INK + ";");
 
-        Label variantTitle = new Label("Choose Your Variant");
+        Label variantTitle = new Label(AppText.text("Choose Your Variant"));
         variantTitle.setStyle(
                 "-fx-font-size: 18px;"
                         + "-fx-font-weight: bold;"
@@ -116,24 +117,24 @@ public class GameLobbyController {
         // Places Senegalese Checkers on a new full-width row.
         variantsGrid.add(senegaleseVariantButton, 0, 2, 2, 1);
 
-        Button createPublicButton = new Button("Create Public Game");
+        Button createPublicButton = new Button(AppText.text("Create Public Game"));
         createPublicButton.setOnAction(event -> createGame("PUBLIC"));
 
-        Button createPrivateButton = new Button("Create Private Game");
+        Button createPrivateButton = new Button(AppText.text("Create Private Game"));
         createPrivateButton.setOnAction(event -> createGame("PRIVATE"));
 
-        Button refreshButton = new Button("Refresh Public Games");
+        Button refreshButton = new Button(AppText.text("Refresh Public Games"));
         refreshButton.setOnAction(event -> refreshPublicGames());
 
-        Button joinPublicButton = new Button("Join Selected Game");
+        Button joinPublicButton = new Button(AppText.text("Join Selected Game"));
         joinPublicButton.setOnAction(event -> joinSelectedPublicGame());
 
-        joinCodeField.setPromptText("Enter private room join code");
+        joinCodeField.setPromptText(AppText.text("Enter private room join code"));
 
-        Button joinPrivateButton = new Button("Join Private Game");
+        Button joinPrivateButton = new Button(AppText.text("Join Private Game"));
         joinPrivateButton.setOnAction(event -> joinPrivateGame());
 
-        Button backButton = new Button("Back to Menu");
+        Button backButton = new Button(AppText.text("Back to Menu"));
         backButton.setOnAction(event -> {
             disconnectFromGame();
             Main.showMainMenu();
@@ -153,7 +154,7 @@ public class GameLobbyController {
 
         gamesList.setPrefHeight(150);
         gamesList.setPlaceholder(
-                new Label("No public games loaded. Click Refresh."));
+                new Label(AppText.text("No public games loaded. Click Refresh.")));
 
         roomLabel.setWrapText(true);
         statusLabel.setWrapText(true);
@@ -163,12 +164,12 @@ public class GameLobbyController {
                 title,
                 variantTitle,
                 variantsGrid,
-                new Label("Create a Game"),
+                new Label(AppText.text("Create a Game")),
                 createButtons,
-                new Label("Available Public Games"),
+                new Label(AppText.text("Available Public Games")),
                 gamesList,
                 publicGameButtons,
-                new Label("Join a Private Game"),
+                new Label(AppText.text("Join a Private Game")),
                 privateJoinRow,
                 roomLabel,
                 statusLabel,
@@ -178,6 +179,7 @@ public class GameLobbyController {
         root.setAlignment(Pos.TOP_CENTER);
         AppTheme.applyBackground(root);
 
+        AppText.applyOrientation(root);
         return new Scene(root, 650, 950);
     }
 
@@ -224,9 +226,9 @@ public class GameLobbyController {
             boolean available) {
 
         Button button = new Button(
-                board + "\n\n" + name + "\n\n"
-                        + description + "\n\n"
-                        + (available ? "AVAILABLE" : "COMING SOON"));
+                AppText.text(board) + "\n\n" + AppText.text(name) + "\n\n"
+                        + AppText.text(description) + "\n\n"
+                        + AppText.text(available ? "AVAILABLE" : "COMING SOON"));
 
         button.setPrefSize(230, 155);
         button.setWrapText(true);
@@ -244,8 +246,8 @@ public class GameLobbyController {
     }
 
     private void createGame(String visibility) {
-        statusLabel.setText("Creating " + visibility.toLowerCase()
-                + " game...");
+        statusLabel.setText(AppText.text("Creating {0} game...",
+                AppText.text("PUBLIC".equals(visibility) ? "Public" : "Private")));
 
         CompletableFuture.runAsync(() -> {
             try {
@@ -266,16 +268,17 @@ public class GameLobbyController {
                 Platform.runLater(() -> {
                     currentGameId = gameId;
 
-                    String details = "Room ID: " + gameId
+                    String details = AppText.text("Room ID: {0}", gameId)
                             + (databaseGameId != null
-                                    ? "\nDatabase game ID: " + databaseGameId
+                                    ? "\n" + AppText.text("Database game ID: {0}", databaseGameId)
                                     : "")
-                            + "\nVisibility: " + visibility
-                            + "\nVariant: " + currentVariantId
+                            + "\n" + AppText.text("Visibility: {0}",
+                                    AppText.text("PUBLIC".equals(visibility) ? "Public" : "Private"))
+                            + "\n" + AppText.text("Variant: {0}", localizedVariant(currentVariantId))
                             + (joinCode != null && !joinCode.isBlank()
-                                    ? "\nJoin Code: " + joinCode
+                                    ? "\n" + AppText.text("Join Code: {0}", joinCode)
                                     : "")
-                            + "\n\nConnecting to the game server...";
+                            + "\n\n" + AppText.text("Connecting to the game server...");
 
                     roomLabel.setText(details);
                     connectToGame(gameId);
@@ -286,13 +289,13 @@ public class GameLobbyController {
                 System.err.println("Error: " + e.getMessage());
                 e.printStackTrace();
 
-                Platform.runLater(() -> showError("Could not create game", e));
+                Platform.runLater(() -> showError(AppText.text("Could not create game"), e));
             }
         });
     }
 
     private void refreshPublicGames() {
-        statusLabel.setText("Loading public games...");
+        statusLabel.setText(AppText.text("Loading public games..."));
 
         CompletableFuture.runAsync(() -> {
             try {
@@ -309,7 +312,7 @@ public class GameLobbyController {
 
                     if (games == null || !games.isArray()) {
                         statusLabel.setText(
-                                "The server returned an unexpected public-games response.");
+                                AppText.text("The server returned an unexpected public-games response."));
                         return;
                     }
 
@@ -323,22 +326,24 @@ public class GameLobbyController {
                             gamesList.getItems().add(
                                     gameId
                                             + " | "
-                                            + (variantId == null ? "Unknown" : variantId)
-                                            + " | Players: "
-                                            + (players == null ? "?" : players)
-                                            + " | Status: "
-                                            + (status == null ? "?" : status));
+                                            + (variantId == null
+                                                    ? AppText.text("Unknown")
+                                                    : localizedVariant(variantId))
+                                            + " | " + AppText.text("Players: {0}",
+                                                    players == null ? "?" : players)
+                                            + " | " + AppText.text("Status: {0}",
+                                                    AppText.text(status == null ? "?" : status)));
                         }
                     }
 
                     statusLabel.setText(
                             gamesList.getItems().isEmpty()
-                                    ? "No public games are currently available."
-                                    : "Select a public game to join.");
+                                    ? AppText.text("No public games are currently available.")
+                                    : AppText.text("Select a public game to join."));
                 });
 
             } catch (Exception e) {
-                showError("Could not load public games", e);
+                showError(AppText.text("Could not load public games"), e);
             }
         });
     }
@@ -348,15 +353,15 @@ public class GameLobbyController {
                 .getSelectedItem();
 
         if (selected == null || selected.isBlank()) {
-            showAlert("Select a Game",
-                    "Choose a public game from the list first.");
+            showAlert(AppText.text("Select a Game"),
+                    AppText.text("Choose a public game from the list first."));
             return;
         }
 
         // The displayed format is: gameId | Players: ... | Status: ...
         String gameId = selected.split("\\s*\\|\\s*")[0].trim();
 
-        statusLabel.setText("Joining public game...");
+        statusLabel.setText(AppText.text("Joining public game..."));
 
         CompletableFuture.runAsync(() -> {
             try {
@@ -377,15 +382,15 @@ public class GameLobbyController {
                     currentVariantId = variantId;
 
                     roomLabel.setText(
-                            "Room ID: " + gameId
-                                    + "\nVariant: " + currentVariantId
-                                    + "\nConnecting to the game server...");
+                            AppText.text("Room ID: {0}", gameId)
+                                    + "\n" + AppText.text("Variant: {0}", localizedVariant(currentVariantId))
+                                    + "\n" + AppText.text("Connecting to the game server..."));
 
                     connectToGame(gameId);
                 });
 
             } catch (Exception e) {
-                showError("Could not join public game", e);
+                showError(AppText.text("Could not join public game"), e);
             }
         });
     }
@@ -394,12 +399,12 @@ public class GameLobbyController {
         String joinCode = joinCodeField.getText().trim();
 
         if (joinCode.isBlank()) {
-            showAlert("Missing Join Code",
-                    "Enter the private game's join code.");
+            showAlert(AppText.text("Missing Join Code"),
+                    AppText.text("Enter the private game's join code."));
             return;
         }
 
-        statusLabel.setText("Joining private game...");
+        statusLabel.setText(AppText.text("Joining private game..."));
 
         CompletableFuture.runAsync(() -> {
             try {
@@ -425,21 +430,21 @@ public class GameLobbyController {
                     currentVariantId = variantId;
 
                     roomLabel.setText(
-                            "Room ID: " + gameId
-                                    + "\nVariant: " + currentVariantId
-                                    + "\nConnecting to the game server...");
+                            AppText.text("Room ID: {0}", gameId)
+                                    + "\n" + AppText.text("Variant: {0}", localizedVariant(currentVariantId))
+                                    + "\n" + AppText.text("Connecting to the game server..."));
 
                     connectToGame(gameId);
                 });
 
             } catch (Exception e) {
-                showError("Could not join private game", e);
+                showError(AppText.text("Could not join private game"), e);
             }
         });
     }
 
     private void connectToGame(String gameId) {
-        statusLabel.setText("Connecting to room " + gameId + "...");
+        statusLabel.setText(AppText.text("Connecting to room {0}...", gameId));
 
         // Close an earlier connection if the player changes rooms.
         if (webSocketClient != null) {
@@ -449,7 +454,7 @@ public class GameLobbyController {
         webSocketClient = new GameWebSocketClient(
                 Main.getAuthApi().getClient(),
                 message -> handleServerMessage(message),
-                status -> Platform.runLater(() -> statusLabel.setText(status)));
+                status -> Platform.runLater(() -> statusLabel.setText(AppText.text(status))));
 
         webSocketClient.connect(gameId, "");
     }
@@ -465,7 +470,7 @@ public class GameLobbyController {
 
         Platform.runLater(() -> {
             if (type == null) {
-                statusLabel.setText("Received a server message without a type.");
+                statusLabel.setText(AppText.text("Received a server message without a type."));
                 return;
             }
 
@@ -482,27 +487,23 @@ public class GameLobbyController {
                                     + message);
 
                     Platform.runLater(() -> statusLabel.setText(
-                            "Connected. Player " + connectedPlayerNumber
-                                    + ", players: "
-                                    + message.path("players").asInt()));
+                            AppText.text("Connected. Player {0}, players: {1}",
+                                    connectedPlayerNumber, message.path("players").asInt())));
                     break;
 
                 case "PLAYER_JOINED":
-                    statusLabel.setText(
-                            (username == null ? "A player" : username)
-                                    + " joined. Players: "
-                                    + (players == null ? "?" : players));
+                    statusLabel.setText(AppText.text("{0} joined. Players: {1}",
+                            username == null ? AppText.text("A player") : username,
+                            players == null ? "?" : players));
                     break;
 
                 case "PLAYER_LEFT":
-                    statusLabel.setText(
-                            (username == null ? "A player" : username)
-                                    + " left the room.");
+                    statusLabel.setText(AppText.text("Player {0} left the room.",
+                            username == null ? AppText.text("A player") : username));
                     break;
 
                 case "GAME_WAITING":
-                    statusLabel.setText(
-                            "Waiting for another player...");
+                    statusLabel.setText(AppText.text("Waiting for another player..."));
                     break;
 
                 case "GAME_STARTED":
@@ -538,11 +539,8 @@ public class GameLobbyController {
                     break;
 
                 default:
-                    statusLabel.setText(
-                            type
-                                    + (serverMessage == null
-                                            ? ""
-                                            : ": " + serverMessage));
+                    statusLabel.setText(AppText.text(type)
+                            + (serverMessage == null ? "" : ": " + AppText.text(serverMessage)));
                     break;
             }
         });
@@ -566,14 +564,27 @@ public class GameLobbyController {
         return value.isValueNode() ? value.asText() : value.toString();
     }
 
+    private String localizedVariant(String variantId) {
+        return AppText.text(switch (variantId) {
+            case "AMERICAN" -> "American Checkers";
+            case "MALAYSIAN" -> "Malaysian Draughts";
+            case "THAI" -> "Thai Draughts";
+            case "TURKISH" -> "Turkish Draughts";
+            case "SENEGALESE" -> "Senegalese Checkers";
+            default -> variantId;
+        });
+    }
+
     private void showError(String title, Exception e) {
         Platform.runLater(() -> {
-            statusLabel.setText(title + ": " + e.getMessage());
+            String message = e.getMessage() == null
+                    ? title : AppText.text(e.getMessage());
+            statusLabel.setText(title + ": " + message);
 
             Alert alert = new Alert(Alert.AlertType.ERROR);
             alert.setTitle(title);
             alert.setHeaderText(title);
-            alert.setContentText(e.getMessage());
+            alert.setContentText(message);
             alert.showAndWait();
         });
     }

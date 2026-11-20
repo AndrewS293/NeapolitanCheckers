@@ -93,7 +93,7 @@ class LocalGameAcceptanceTest {
                             game.getBoard(), game.getCurrentPlayer()).contains(selected),
                     variantId + " AI must choose a variant-legal turn");
             play(game, selected);
-            assertEquals(GameLogic.red_player, game.getCurrentPlayer(), variantId);
+            assertEquals(GameLogic.RED_PLAYER, game.getCurrentPlayer(), variantId);
         }
     }
 
@@ -103,8 +103,8 @@ class LocalGameAcceptanceTest {
                 GameLogic game = factory.createGame("SENEGALESE");
 
                 assertEquals(10, game.getBoard().getBoardSize());
-                assertEquals(20, game.countPieces(GameLogic.red_player));
-                assertEquals(20, game.countPieces(GameLogic.black_player));
+                assertEquals(20, game.countPieces(GameLogic.RED_PLAYER));
+                assertEquals(20, game.countPieces(GameLogic.BLACK_PLAYER));
                 assertTrue(variants.getAll().stream()
                                 .anyMatch(rules -> rules.getVariantId().equals("SENEGALESE")));
                 assertTrue(factory.getAvailableVariants().stream()
@@ -113,11 +113,11 @@ class LocalGameAcceptanceTest {
                 assertEquals(6, VariantSelectionController.variantCardIds().size());
 
                 TurnMove opening = game.getRules().getLegalTurns(
-                        game.getBoard(), GameLogic.red_player).getFirst();
+                        game.getBoard(), GameLogic.RED_PLAYER).getFirst();
                 for (var step : opening.steps()) {
                     assertTrue(game.move(step.startIndex(), step.endIndex()));
                 }
-                assertEquals(GameLogic.black_player, game.getCurrentPlayer());
+                assertEquals(GameLogic.BLACK_PLAYER, game.getCurrentPlayer());
         }
 
         @Test
@@ -126,8 +126,8 @@ class LocalGameAcceptanceTest {
                 GameLogic game = factory.createGame("MALAYSIAN");
 
                 assertEquals(12, game.getBoard().getBoardSize());
-                assertEquals(30, game.countPieces(GameLogic.red_player));
-                assertEquals(30, game.countPieces(GameLogic.black_player));
+                assertEquals(30, game.countPieces(GameLogic.RED_PLAYER));
+                assertEquals(30, game.countPieces(GameLogic.BLACK_PLAYER));
                 assertTrue(variants.getAll().stream()
                                 .anyMatch(rules -> rules.getVariantId().equals("MALAYSIAN")));
                 assertTrue(factory.getAvailableVariants().stream()
@@ -136,11 +136,11 @@ class LocalGameAcceptanceTest {
                 assertEquals(6, VariantSelectionController.variantCardIds().size());
 
                 TurnMove opening = game.getRules().getLegalTurns(
-                        game.getBoard(), GameLogic.red_player).getFirst();
+                        game.getBoard(), GameLogic.RED_PLAYER).getFirst();
                 for (var step : opening.steps()) {
                     assertTrue(game.move(step.startIndex(), step.endIndex()));
                 }
-                assertEquals(GameLogic.black_player, game.getCurrentPlayer());
+                assertEquals(GameLogic.BLACK_PLAYER, game.getCurrentPlayer());
         }
 
 
@@ -150,8 +150,8 @@ class LocalGameAcceptanceTest {
                 GameLogic game = factory.createGame("THAI");
 
                 assertEquals(8, game.getBoard().getBoardSize());
-                assertEquals(8, game.countPieces(GameLogic.red_player));
-                assertEquals(8, game.countPieces(GameLogic.black_player));
+                assertEquals(8, game.countPieces(GameLogic.RED_PLAYER));
+                assertEquals(8, game.countPieces(GameLogic.BLACK_PLAYER));
                 assertTrue(variants.getAll().stream()
                                 .anyMatch(rules -> rules.getVariantId().equals("THAI")));
                 assertTrue(factory.getAvailableVariants().stream()
@@ -160,11 +160,11 @@ class LocalGameAcceptanceTest {
                 assertEquals(6, VariantSelectionController.variantCardIds().size());
 
                 TurnMove opening = game.getRules().getLegalTurns(
-                        game.getBoard(), GameLogic.red_player).getFirst();
+                        game.getBoard(), GameLogic.RED_PLAYER).getFirst();
                 for (var step : opening.steps()) {
                     assertTrue(game.move(step.startIndex(), step.endIndex()));
                 }
-                assertEquals(GameLogic.black_player, game.getCurrentPlayer());
+                assertEquals(GameLogic.BLACK_PLAYER, game.getCurrentPlayer());
         }
 
 

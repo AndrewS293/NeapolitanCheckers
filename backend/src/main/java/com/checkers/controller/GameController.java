@@ -75,6 +75,8 @@ public class GameController {
                 ? value : "";
         String result = request.get("result") instanceof String value
                 ? value : "";
+        String reason = request.get("reason") instanceof String value
+                ? value : "RULES";
         Object winnerValue = request.get("winnerPlayer");
         Integer winnerPlayer = integerValue(winnerValue);
         if (!sessionManager.isSupportedVariant(variantId)) {
@@ -83,9 +85,15 @@ public class GameController {
         if (!"HUMAN".equals(opponent) && !"AI".equals(opponent)) {
             return ResponseEntity.badRequest().body(Map.of("error", "Invalid local game opponent."));
         }
+        if (!"RULES".equals(reason) && !"TIMEOUT".equals(reason)) {
+            return ResponseEntity.badRequest().body(Map.of("error", "Invalid game completion reason."));
+        }
         if (!"RED_WON".equals(result) && !"BLACK_WON".equals(result)
                 && !"DRAW".equals(result)) {
             return ResponseEntity.badRequest().body(Map.of("error", "A completed game result is required."));
+        }
+        if ("TIMEOUT".equals(reason) && "DRAW".equals(result)) {
+            return ResponseEntity.badRequest().body(Map.of("error", "A timeout must have a winning player."));
         }
         if (winnerValue != null
                 && (winnerPlayer == null || (winnerPlayer != 1 && winnerPlayer != 2))) {
@@ -99,8 +107,10 @@ public class GameController {
         if (!Objects.equals(winnerPlayer, expectedWinner)) {
             return ResponseEntity.badRequest().body(Map.of("error", "Winner does not match the game result."));
         }
-        if (!(request.get("moves") instanceof List<?> moves) || moves.isEmpty()) {
-            return ResponseEntity.badRequest().body(Map.of("error", "Completed games must include their moves."));
+        if (!(request.get("moves") instanceof List<?> moves)
+                || (moves.isEmpty() && !"TIMEOUT".equals(reason))) {
+            return ResponseEntity.badRequest().body(Map.of(
+                    "error", "Completed games must include their moves unless the result is a timeout."));
         }
 
         List<Map<String, Object>> savedMoves = new ArrayList<>();
@@ -119,7 +129,8 @@ public class GameController {
             }
             savedMoves.add(savedMove);
         }
-        if (!result.equals(savedMoves.getLast().get("gameState"))) {
+        if (!savedMoves.isEmpty()
+                && !result.equals(savedMoves.getLast().get("gameState"))) {
             return ResponseEntity.badRequest().body(Map.of(
                     "error", "The final saved move does not match the game result."));
         }

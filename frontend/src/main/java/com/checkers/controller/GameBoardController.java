@@ -7,6 +7,7 @@ import com.checkers.logic.Board;
 import com.checkers.logic.GameLogic;
 import com.checkers.rules.GameRules;
 import com.checkers.logic.Piece;
+import com.checkers.localization.AppText;
 import com.checkers.websocket.GameWebSocketClient;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -16,7 +17,6 @@ import javafx.application.Platform;
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
 import javafx.scene.Scene;
-import javafx.scene.control.Alert;
 import javafx.scene.control.Button;
 import javafx.scene.control.ButtonType;
 import javafx.scene.control.Dialog;
@@ -25,7 +25,6 @@ import javafx.scene.control.ScrollPane;
 import javafx.scene.control.Separator;
 import javafx.scene.control.ToggleButton;
 import javafx.scene.control.ToggleGroup;
-import javafx.scene.control.ButtonBar;
 import javafx.scene.layout.BorderPane;
 import javafx.scene.layout.GridPane;
 import javafx.scene.layout.HBox;
@@ -38,7 +37,9 @@ import javafx.animation.FadeTransition;
 import javafx.animation.ParallelTransition;
 import javafx.animation.PauseTransition;
 import javafx.animation.ScaleTransition;
+import javafx.animation.Timeline;
 import javafx.animation.TranslateTransition;
+import javafx.animation.KeyFrame;
 import javafx.util.Duration;
 
 import java.util.Collections;
@@ -64,15 +65,31 @@ public class GameBoardController {
     private String onlineGameId;
     private int onlinePlayerNumber;
     private GameWebSocketClient webSocketClient;
+    private boolean onlineCompletionConfirmed;
+    private boolean onlineCompletionSaved = true;
+    private boolean timeoutEndedGame;
 
     private final ObjectMapper objectMapper = new ObjectMapper();
 
     private static final double MAX_BOARD_SIZE = 500;
+    private static final int GAME_DURATION_SECONDS = 15 * 60;
+    private static final int MOVE_DURATION_SECONDS = 60;
+    private int gameSecondsRemaining = GAME_DURATION_SECONDS;
+    private int moveSecondsRemaining = MOVE_DURATION_SECONDS;
+    private Timeline localTimer;
 
     private GameLogic gameLogic;
     private BorderPane root;
+    private StackPane sceneRoot;
     private GridPane board;
     private Label gameStatus;
+    private Label gameTimerLabel;
+    private Label moveTimerLabel;
+    private StackPane completionOverlay;
+    private Label completionTitle;
+    private Label completionDetails;
+    private Label completionStatus;
+    private HBox completionActions;
         private ReinforcementLearningTrainer.TrainedAgent trainedAgent;
         private boolean aiThinking;
         private GameApi localGameApi;
@@ -136,37 +153,50 @@ public class GameBoardController {
     public Scene createScene() {
         // Displays the name of the selected checkers variant.
         Label title = new Label(
-                gameLogic.getRules().getDisplayName());
+                AppText.text(gameLogic.getRules().getDisplayName()));
         title.setStyle(
                 "-fx-font-size: 28px;" +
                         "-fx-font-weight: bold;");
 
         gameStatus = new Label();
         gameStatus.setStyle("-fx-font-size: 16px;");
+        gameTimerLabel = new Label();
+        moveTimerLabel = new Label();
+        updateTimerLabels();
 
         board = createBoard();
         board.setAlignment(Pos.CENTER);
 
         updateGameStatus();
 
-        Button newGameButton = new Button("New Game");
+        Button newGameButton = new Button(AppText.text("New Game"));
         AppTheme.stylePrimaryButton(newGameButton);
         newGameButton.setDisable(onlineMode);
-        Button backButton = new Button("Back to Menu");
+        Button backButton = new Button(AppText.text("Back to Menu"));
         AppTheme.styleSecondaryButton(backButton);
 
-        Button rulesButton = new Button("Rules / Help");
+        Button rulesButton = new Button(AppText.text("Rules / Help"));
         AppTheme.styleSecondaryButton(rulesButton);
         rulesButton.setOnAction(event -> showRulesTutorial());
 
         newGameButton.setOnAction(event -> startNewGame());
 
-        backButton.setOnAction(event -> Main.showMainMenu());
+        backButton.setOnAction(event -> {
+            stopLocalTimer();
+            Main.showMainMenu();
+        });
 
         HBox buttons = new HBox(15, rulesButton, newGameButton, backButton);
         buttons.setAlignment(Pos.CENTER);
 
-        VBox topSection = new VBox(10, title, gameStatus);
+        HBox timerSection = new HBox(
+                24,
+                new Label(AppText.text("Game:")),
+                gameTimerLabel,
+                new Label(AppText.text("Move:")),
+                moveTimerLabel);
+        timerSection.setAlignment(Pos.CENTER);
+        VBox topSection = new VBox(10, title, gameStatus, timerSection);
         topSection.setAlignment(Pos.CENTER);
 
         root = new BorderPane();
@@ -178,7 +208,11 @@ public class GameBoardController {
 
         BorderPane.setMargin(board, new Insets(20, 0, 20, 0));
 
-        return new Scene(root);
+        sceneRoot = new StackPane(root);
+        if (!onlineMode) {
+            startLocalTimer();
+        }
+        return new Scene(sceneRoot);
     }
 
     private int getBoardSize() {
@@ -309,19 +343,38 @@ public class GameBoardController {
     }
 
     private void startNewGame() {
+        if (localTimer != null) {
+            localTimer.stop();
+        }
         gameLogic = new GameLogic(gameLogic.getRules());
         selectedIndex = -1;
         legalDestinations = Collections.emptyList();
         gameOverMessageShown = false;
+        timeoutEndedGame = false;
+        onlineCompletionConfirmed = false;
+        onlineCompletionSaved = true;
         awaitingServerMove = false;
         localGameSaveStarted = false;
         localGameMoves.clear();
+        gameSecondsRemaining = GAME_DURATION_SECONDS;
+        moveSecondsRemaining = MOVE_DURATION_SECONDS;
+        if (root != null) {
+            root.setDisable(false);
+        }
+        if (completionOverlay != null) {
+            completionOverlay.setVisible(false);
+        }
+        if (!onlineMode && sceneRoot != null) {
+            startLocalTimer();
+        }
         refreshBoard();
         updateGameStatus();
     }
 
     private void handleSquareClick(int clickedIndex) {
-        if (aiThinking) {
+        if (aiThinking || gameOverMessageShown
+                || (onlineMode && !onlineCompletionSaved
+                        && onlineCompletionConfirmed)) {
             return;
         }
         if (gameLogic.isGameOver()) {
@@ -335,7 +388,7 @@ public class GameBoardController {
 
         if (selectedIndex == -1) {
             if (onlineMode && !isLocalPlayersPiece(clickedIndex)) {
-                gameStatus.setText("Select one of your own pieces.");
+                gameStatus.setText(AppText.text("Select one of your own pieces."));
                 return;
             }
 
@@ -345,16 +398,16 @@ public class GameBoardController {
                 if (destinations.isEmpty()) {
                     gameStatus.setText(
                             gameLogic.hasAnyJump(gameLogic.getCurrentPlayer())
-                                    ? "A jump is available. Select a piece that can jump."
-                                    : "That piece has no legal moves.");
+                                    ? AppText.text("A jump is available. Select a piece that can jump.")
+                                    : AppText.text("That piece has no legal moves."));
                 } else {
                     selectedIndex = clickedIndex;
                     legalDestinations = destinations;
-                    gameStatus.setText("Choose a highlighted destination.");
+                    gameStatus.setText(AppText.text("Choose a highlighted destination."));
                     refreshBoard();
                 }
             } else {
-                gameStatus.setText("Select one of your pieces.");
+                gameStatus.setText(AppText.text("Select one of your own pieces."));
             }
 
             return;
@@ -377,7 +430,7 @@ public class GameBoardController {
             int toCol = currentBoard.colOf(clickedIndex);
 
             if (fromRow < 0 || fromCol < 0 || toRow < 0 || toCol < 0) {
-                gameStatus.setText("Invalid square selected.");
+                gameStatus.setText(AppText.text("Invalid square selected."));
                 return;
             }
 
@@ -390,10 +443,10 @@ public class GameBoardController {
                         selectedIndex = clickedIndex;
                         legalDestinations = destinations;
                         refreshBoard();
-                        gameStatus.setText("Choose a highlighted destination.");
+                        gameStatus.setText(AppText.text("Choose a highlighted destination."));
                     }
                 } else {
-                    gameStatus.setText("Choose a highlighted destination.");
+                    gameStatus.setText(AppText.text("Choose a highlighted destination."));
                 }
 
                 return;
@@ -409,8 +462,12 @@ public class GameBoardController {
             MoveFeedback feedback = createMoveFeedback(
                     beforeMove, selectedIndex, clickedIndex);
             recordLocalMove(selectedIndex, clickedIndex, movingPlayer);
-            updateSelectionAfterMove();
-            refreshBoard();
+        resetLocalMoveTimerAfterTurn();
+        updateSelectionAfterMove();
+        if (gameLogic.isGameOver() && root != null) {
+            root.setDisable(true);
+        }
+        refreshBoard();
             animateMove(feedback, () -> {
                 showGameOverMessage();
                 requestAiMove();
@@ -425,13 +482,13 @@ public class GameBoardController {
             if (!destinations.isEmpty()) {
                 selectedIndex = clickedIndex;
                 legalDestinations = destinations;
-                gameStatus.setText("Choose a highlighted destination.");
+                gameStatus.setText(AppText.text("Choose a highlighted destination."));
                 refreshBoard();
             } else {
-                gameStatus.setText("That piece has no legal moves.");
+                gameStatus.setText(AppText.text("That piece has no legal moves."));
             }
         } else {
-            gameStatus.setText("Invalid move. Try again.");
+            gameStatus.setText(AppText.text("Invalid move. Try again."));
         }
     }
 
@@ -582,15 +639,16 @@ public class GameBoardController {
 
     private void showRulesTutorial() {
         Dialog<ButtonType> dialog = new Dialog<>();
-        dialog.setTitle("How to Play");
-        dialog.setHeaderText(gameLogic.getRules().getDisplayName() + " Rules");
+        dialog.setTitle(AppText.text("How to Play"));
+        dialog.setHeaderText(AppText.text("{0} Rules",
+                AppText.text(gameLogic.getRules().getDisplayName())));
         dialog.getDialogPane().getButtonTypes().add(ButtonType.CLOSE);
 
         Label ruleSummary = new Label(getVariantRulesSummary());
         ruleSummary.setWrapText(true);
         ruleSummary.setStyle("-fx-font-size: 14px; -fx-line-spacing: 3px;");
 
-        Label demoTitle = new Label("Move examples");
+        Label demoTitle = new Label(AppText.text("Move examples"));
         demoTitle.setStyle("-fx-font-size: 17px; -fx-font-weight: bold;");
         GridPane demoBoard = new GridPane();
         demoBoard.setAlignment(Pos.CENTER);
@@ -599,7 +657,9 @@ public class GameBoardController {
         HBox demos = new HBox(8);
         demos.setAlignment(Pos.CENTER);
         ToggleGroup demoGroup = new ToggleGroup();
-        String[] names = {"Move", "Capture", "Become a king", "King move"};
+        String[] names = {
+                AppText.text("Move"), AppText.text("Capture"),
+                AppText.text("Become a king"), AppText.text("King move")};
         for (int demo = 0; demo < names.length; demo++) {
             ToggleButton button = new ToggleButton(names[demo]);
             button.setToggleGroup(demoGroup);
@@ -632,13 +692,14 @@ public class GameBoardController {
     }
 
     private String getVariantRulesSummary() {
-        String common = "TURKISH".equals(gameLogic.getConfig().getVariantId())
-            ? "Take turns moving one piece to an open square. A capture removes an opponent "
-                + "piece; reaching the far edge promotes a piece to king.\n\n"
-            : "Take turns moving one piece diagonally to an open playable square. "
-                + "A jump lands beyond an opponent piece and captures it. "
-                + "Pieces reaching the far edge are promoted to kings.\n\n";
-        return common + switch (gameLogic.getConfig().getVariantId()) {
+        String common = AppText.text(
+                "TURKISH".equals(gameLogic.getConfig().getVariantId())
+                        ? "Take turns moving one piece to an open square. A capture removes an opponent "
+                                + "piece; reaching the far edge promotes a piece to king.\n\n"
+                        : "Take turns moving one piece diagonally to an open playable square. "
+                                + "A jump lands beyond an opponent piece and captures it. "
+                                + "Pieces reaching the far edge are promoted to kings.\n\n");
+        String rules = switch (gameLogic.getConfig().getVariantId()) {
             case "AMERICAN" -> "American Checkers: captures are mandatory. Regular pieces move "
                     + "and capture forward; kings move one diagonal square in either direction.";
             case "MALAYSIAN" -> "Malaysian Draughts: kings can travel along a diagonal. "
@@ -652,6 +713,7 @@ public class GameBoardController {
             default -> "Movement and capture details depend on this variant. The highlighted "
                     + "squares on the board show the legal choices for the selected piece.";
         };
+        return common + AppText.text(rules);
     }
 
     private void showTutorialDemo(
@@ -692,10 +754,14 @@ public class GameBoardController {
         actor.setOpacity(0);
 
         description.setText(switch (demo) {
-            case 1 -> "A capture jumps over an opposing piece; the jumped piece is removed.";
-            case 2 -> "Reach the far edge to become a king. The gold rim marks the promotion.";
-            case 3 -> "Kings move diagonally. Some variants allow kings to travel several squares.";
-            default -> "Choose a highlighted legal destination to move one square.";
+            case 1 -> AppText.text(
+                    "A capture jumps over an opposing piece; the jumped piece is removed.");
+            case 2 -> AppText.text(
+                    "Reach the far edge to become a king. The gold rim marks the promotion.");
+            case 3 -> AppText.text(
+                    "Kings move diagonally. Some variants allow kings to travel several squares.");
+            default -> AppText.text(
+                    "Choose a highlighted legal destination to move one square.");
         });
 
         TranslateTransition move = new TranslateTransition(
@@ -752,20 +818,29 @@ public class GameBoardController {
         }
 
         if (gameLogic.isGameOver()) {
-            gameStatus.setText(gameLogic.getGameResultMessage());
+            gameStatus.setText(gameResultText());
             return;
         }
 
         if (gameLogic.isMultiJumpInProgress()) {
-            gameStatus.setText("Jump again with the highlighted piece.");
+            gameStatus.setText(AppText.text("Jump again with the highlighted piece."));
             return;
         }
 
-        if (gameLogic.getCurrentPlayer() == GameLogic.red_player) {
-            gameStatus.setText("Red player's turn");
+        if (gameLogic.getCurrentPlayer() == GameLogic.RED_PLAYER) {
+            gameStatus.setText(AppText.text("Red player's turn"));
         } else {
-            gameStatus.setText("Black player's turn");
+            gameStatus.setText(AppText.text("Black player's turn"));
         }
+    }
+
+    private String gameResultText() {
+        return switch (gameLogic.getGameState()) {
+            case RED_WON -> AppText.text("Red wins!");
+            case BLACK_WON -> AppText.text("Black wins!");
+            case DRAW -> AppText.text("Draw");
+            case IN_PROGRESS -> "";
+        };
     }
 
     private void requestAiMove() {
@@ -775,7 +850,7 @@ public class GameBoardController {
         }
 
         aiThinking = true;
-        gameStatus.setText("AI is thinking...");
+        gameStatus.setText(AppText.text("AI is thinking..."));
         GameLogic source = gameLogic;
         GameLogic position = source.copy();
         ReinforcementLearningTrainer.TrainedAgent agent = trainedAgent;
@@ -793,7 +868,7 @@ public class GameBoardController {
             } catch (RuntimeException exception) {
                 Platform.runLater(() -> {
                     aiThinking = false;
-                    gameStatus.setText("AI failed: " + exception.getMessage());
+                    gameStatus.setText(AppText.text("AI failed: {0}", exception.getMessage()));
                 });
             }
         }, "checkers-ai-move");
@@ -828,13 +903,17 @@ public class GameBoardController {
         Board beforeMove = getCurrentBoard().copy();
         if (!gameLogic.move(step.startIndex(), step.endIndex())) {
             aiThinking = false;
-            gameStatus.setText("AI move could not be applied.");
+            gameStatus.setText(AppText.text("AI move could not be applied."));
             return;
         }
         MoveFeedback feedback = createMoveFeedback(
                 beforeMove, step.startIndex(), step.endIndex());
         recordLocalMove(step.startIndex(), step.endIndex(), movingPlayer);
+        resetLocalMoveTimerAfterTurn();
         updateSelectionAfterMove();
+        if (gameLogic.isGameOver() && root != null) {
+            root.setDisable(true);
+        }
         refreshBoard();
         animateMove(feedback, () -> {
             PauseTransition nextStep = new PauseTransition(Duration.millis(120));
@@ -846,12 +925,13 @@ public class GameBoardController {
     }
 
     private void showGameOverMessage() {
-        if (!gameLogic.isGameOver() || gameOverMessageShown) {
+        if (!gameLogic.isGameOver() || gameOverMessageShown
+                || (onlineMode && !onlineCompletionConfirmed)) {
             return;
         }
 
         gameOverMessageShown = true;
-        saveCompletedLocalGame();
+        stopLocalTimer();
 
         boolean draw = gameLogic.getGameState() == GameLogic.GameState.DRAW;
         boolean redWon = gameLogic.getGameState() == GameLogic.GameState.RED_WON;
@@ -864,38 +944,193 @@ public class GameBoardController {
                         ? (localPlayerWon ? "Victory!" : "Defeat")
                         : (redWon ? "Red wins!" : "Black wins!");
 
-        Label result = new Label(headline);
-        result.setStyle("-fx-font-size: 30px; -fx-font-weight: bold;");
-        Label details = new Label(gameLogic.getGameResultMessage());
-        details.setStyle("-fx-font-size: 16px;");
-        VBox resultContent = new VBox(12, result, details);
-        resultContent.setAlignment(Pos.CENTER);
-        resultContent.setPadding(new Insets(24, 40, 24, 40));
+        boolean saving = !onlineMode && localGameApi != null;
+        showCompletionOverlay(
+                headline,
+                timeoutEndedGame
+                        ? AppText.text("{0} Time expired.", gameResultText())
+                        : gameResultText(),
+                saving,
+                saving ? "Saving result to the database..." : "Game complete.");
+        if (saving) {
+            saveCompletedLocalGame();
+        } else if (!onlineMode) {
+            revealCompletionActions();
+        } else if (onlineCompletionSaved) {
+            completionStatus.setText(AppText.text("Saved successfully."));
+            revealCompletionActions();
+        } else {
+            failCompletionSave(AppText.text(
+                    "The server could not confirm the database save."));
+        }
+    }
 
-        ButtonType playAgain = new ButtonType("New Game", ButtonBar.ButtonData.OK_DONE);
-        ButtonType mainMenu = new ButtonType("Main Menu", ButtonBar.ButtonData.CANCEL_CLOSE);
-        Dialog<ButtonType> dialog = new Dialog<>();
-        dialog.setTitle("Game Over");
-        dialog.getDialogPane().getButtonTypes().addAll(playAgain, mainMenu);
-        dialog.getDialogPane().setContent(resultContent);
-        dialog.setOnShown(event -> {
-            result.setScaleX(0.7);
-            result.setScaleY(0.7);
-            result.setOpacity(0);
-            ScaleTransition scale = new ScaleTransition(Duration.millis(420), result);
+    private void showSavingOverlay(String message) {
+        if (!gameOverMessageShown) {
+            showCompletionOverlay(
+                    AppText.text("Game over"), AppText.text(message), true,
+                    "Saving result to the database...");
+        }
+    }
+
+    private void showCompletionOverlay(
+            String headline,
+            String details,
+            boolean saving,
+            String status) {
+        if (completionOverlay == null) {
+            completionOverlay = new StackPane();
+            completionOverlay.setPickOnBounds(true);
+            completionOverlay.setOpacity(0);
+            completionOverlay.setStyle(
+                    "-fx-background-color: rgba(23, 60, 54, 0.58);");
+
+            completionTitle = new Label();
+            completionTitle.setOpacity(0);
+            completionTitle.setStyle(
+                    "-fx-font-family: Georgia; -fx-font-size: 30px;"
+                            + " -fx-font-weight: bold; -fx-text-fill: "
+                            + AppTheme.ACCENT + ";");
+            completionDetails = new Label();
+            completionDetails.setWrapText(true);
+            completionDetails.setStyle(
+                    "-fx-font-size: 17px; -fx-text-fill: " + AppTheme.INK + ";");
+            completionStatus = new Label();
+            completionStatus.setWrapText(true);
+            completionStatus.setStyle(
+                    "-fx-font-size: 14px; -fx-text-fill: " + AppTheme.MUTED + ";");
+            completionActions = new HBox(12);
+            completionActions.setAlignment(Pos.CENTER);
+            if (!onlineMode) {
+                Button newGameButton = new Button(AppText.text("Play Again"));
+                AppTheme.stylePrimaryButton(newGameButton);
+                newGameButton.setOnAction(event -> {
+                    completionOverlay.setVisible(false);
+                    root.setDisable(false);
+                    startNewGame();
+                });
+                completionActions.getChildren().add(newGameButton);
+            }
+            Button menuButton = new Button(AppText.text("Main Menu"));
+            AppTheme.styleSecondaryButton(menuButton);
+            menuButton.setOnAction(event -> Main.showMainMenu());
+            completionActions.getChildren().add(menuButton);
+
+            VBox card = new VBox(
+                    16, completionTitle, completionDetails,
+                    completionStatus, completionActions);
+            card.setAlignment(Pos.CENTER);
+            card.setPadding(new Insets(32, 44, 32, 44));
+            card.setMaxWidth(460);
+            card.setStyle(
+                    "-fx-background-color: " + AppTheme.SURFACE
+                            + "; -fx-background-radius: 6;"
+                            + " -fx-border-color: " + AppTheme.BORDER
+                            + "; -fx-border-width: 1; -fx-border-radius: 6;"
+                            + " -fx-effect: dropshadow(gaussian, rgba(23, 60, 54, 0.24), 18, 0.2, 0, 6);");
+            completionOverlay.getChildren().add(card);
+            sceneRoot.getChildren().add(completionOverlay);
+        }
+
+        completionTitle.setText(AppText.text(headline));
+        completionDetails.setText(details);
+        completionStatus.setText(AppText.text(status));
+        completionActions.setVisible(!saving);
+        completionActions.setManaged(!saving);
+        completionOverlay.setVisible(true);
+        root.setDisable(true);
+
+        if (completionOverlay.getOpacity() == 0) {
+            completionOverlay.setOpacity(0);
+            completionTitle.setOpacity(0);
+            completionTitle.setScaleX(0.72);
+            completionTitle.setScaleY(0.72);
+            ScaleTransition scale = new ScaleTransition(
+                    Duration.millis(420), completionTitle);
             scale.setToX(1);
             scale.setToY(1);
-            FadeTransition fade = new FadeTransition(Duration.millis(420), result);
-            fade.setToValue(1);
-            new ParallelTransition(scale, fade).play();
-        });
-        dialog.showAndWait().ifPresent(choice -> {
-            if (choice == playAgain) {
-                startNewGame();
-            } else if (choice == mainMenu) {
-                Main.showMainMenu();
+            FadeTransition titleFade = new FadeTransition(
+                    Duration.millis(420), completionTitle);
+            titleFade.setToValue(1);
+            FadeTransition overlayFade = new FadeTransition(
+                    Duration.millis(260), completionOverlay);
+            overlayFade.setToValue(1);
+            new ParallelTransition(scale, titleFade, overlayFade).play();
+        }
+    }
+
+    private void revealCompletionActions() {
+        completionActions.setVisible(true);
+        completionActions.setManaged(true);
+    }
+
+    private void failCompletionSave(String message) {
+        completionStatus.setText(
+                AppText.text("Could not save this game: {0}", message));
+        completionActions.setVisible(true);
+        completionActions.setManaged(true);
+    }
+
+    private void startLocalTimer() {
+        stopLocalTimer();
+        updateTimerLabels();
+        localTimer = new Timeline(new KeyFrame(
+                Duration.seconds(1), event -> tickLocalTimers()));
+        localTimer.setCycleCount(Timeline.INDEFINITE);
+        localTimer.playFromStart();
+    }
+
+    private void stopLocalTimer() {
+        if (localTimer != null) {
+            localTimer.stop();
+        }
+    }
+
+    private void tickLocalTimers() {
+        if (gameLogic.isGameOver() || gameOverMessageShown) {
+            stopLocalTimer();
+            return;
+        }
+
+        gameSecondsRemaining = Math.max(0, gameSecondsRemaining - 1);
+        moveSecondsRemaining = Math.max(0, moveSecondsRemaining - 1);
+        updateTimerLabels();
+        if (gameSecondsRemaining == 0 || moveSecondsRemaining == 0) {
+            int currentPlayer = gameLogic.getCurrentPlayer();
+            int winner = currentPlayer == GameLogic.RED_PLAYER
+                    ? GameLogic.BLACK_PLAYER : GameLogic.RED_PLAYER;
+            gameLogic.finishByTimeout(winner);
+            timeoutEndedGame = true;
+            if (!localGameMoves.isEmpty()) {
+                localGameMoves.getLast().put(
+                        "gameState", gameLogic.getGameState().name());
             }
-        });
+            refreshBoard();
+            updateGameStatus();
+            showGameOverMessage();
+            return;
+        }
+    }
+
+    private void resetLocalMoveTimerAfterTurn() {
+        if (!onlineMode && !gameLogic.isMultiJumpInProgress()
+                && !gameLogic.isGameOver()) {
+            moveSecondsRemaining = MOVE_DURATION_SECONDS;
+            updateTimerLabels();
+        }
+    }
+
+    private void updateTimerLabels() {
+        if (gameTimerLabel != null) {
+            gameTimerLabel.setText(formatTime(gameSecondsRemaining));
+        }
+        if (moveTimerLabel != null) {
+            moveTimerLabel.setText(formatTime(moveSecondsRemaining));
+        }
+    }
+
+    private String formatTime(int seconds) {
+        return "%d:%02d".formatted(seconds / 60, seconds % 60);
     }
 
     public void configureLocalPersistence(GameApi gameApi, LocalGameOptions options) {
@@ -941,10 +1176,6 @@ public class GameBoardController {
             return;
         }
         localGameSaveStarted = true;
-        if (localGameMoves.isEmpty()) {
-            gameStatus.setText("Game over. No move history was available to save.");
-            return;
-        }
 
         Integer winnerPlayer = switch (gameLogic.getGameState()) {
             case RED_WON -> 1;
@@ -957,9 +1188,11 @@ public class GameBoardController {
         for (Map<String, Object> move : localGameMoves) {
             completedMoves.add(new LinkedHashMap<>(move));
         }
-        completedMoves.getLast().put("result", gameLogic.getGameState().name());
+        if (!completedMoves.isEmpty()) {
+            completedMoves.getLast().put("result", gameLogic.getGameState().name());
+            completedMoves.getLast().put("gameState", gameLogic.getGameState().name());
+        }
         String opponent = aiOpponent ? "AI" : "HUMAN";
-        gameStatus.setText("Game over. Saving game...");
 
         CompletableFuture.runAsync(() -> {
             try {
@@ -968,25 +1201,28 @@ public class GameBoardController {
                         opponent,
                         gameLogic.getGameState().name(),
                         winnerPlayer,
-                        completedMoves);
+                        completedMoves,
+                        timeoutEndedGame);
                 long databaseGameId = saved.path("databaseGameId").asLong(-1);
                 if (databaseGameId <= 0) {
                     throw new IllegalStateException(
                             "The server did not return a database game ID.");
                 }
                 Platform.runLater(() -> gameStatus.setText(
-                        gameLogic.getGameResultMessage()
-                                + " Saved game ID: " + databaseGameId));
+                        gameResultText() + " "
+                                + AppText.text("Saved game ID: {0}", databaseGameId)));
+                Platform.runLater(() -> {
+                    completionStatus.setText(AppText.text(
+                            "Saved successfully. Game ID: {0}", databaseGameId));
+                    revealCompletionActions();
+                });
             } catch (Exception exception) {
                 System.err.println("Could not save completed local game: "
                         + exception.getMessage());
                 Platform.runLater(() -> {
-                    gameStatus.setText("Game over. Saving to the database failed.");
-                    Alert saveError = new Alert(Alert.AlertType.ERROR);
-                    saveError.setTitle("Game save failed");
-                    saveError.setHeaderText("The completed game was not saved.");
-                    saveError.setContentText(exception.getMessage());
-                    saveError.show();
+                    gameStatus.setText(AppText.text(
+                            "Game over. Saving to the database failed."));
+                    failCompletionSave(exception.getMessage());
                 });
             }
         });
@@ -1059,21 +1295,69 @@ public class GameBoardController {
                 case "GAME_STARTED" ->
                     System.out.println("Game started.");
 
+                case "TIMER" -> {
+                    JsonNode timer = objectMapper.readTree(
+                            message.path("message").asText("{}"));
+                    Platform.runLater(() -> {
+                        gameSecondsRemaining = timer.path(
+                                "gameSecondsRemaining").asInt(gameSecondsRemaining);
+                        moveSecondsRemaining = timer.path(
+                                "moveSecondsRemaining").asInt(moveSecondsRemaining);
+                        updateTimerLabels();
+                    });
+                }
+
+                case "GAME_COMPLETING" -> {
+                    String savingMessage = message.path("message").asText(
+                            "Saving the completed game...");
+                    Platform.runLater(() -> showSavingOverlay(savingMessage));
+                }
+
+                case "GAME_SAVE_FAILED" -> {
+                    String failureMessage = message.path("message").asText(
+                            "The completed game could not be saved.");
+                    Platform.runLater(() -> {
+                        if (completionOverlay != null) {
+                            completionOverlay.setVisible(false);
+                            completionOverlay.setOpacity(0);
+                        }
+                        if (root != null) {
+                            root.setDisable(false);
+                        }
+                        gameStatus.setText(AppText.text(failureMessage));
+                    });
+                }
+
                 case "GAME_FINISHED" -> {
                     long databaseGameId = message.path("databaseGameId").asLong(-1);
-                    if (databaseGameId > 0) {
-                        String finishMessage = message.path("message").asText();
-                        Platform.runLater(() -> gameStatus.setText(
-                                finishMessage
-                                        + " Database game ID: " + databaseGameId));
-                    }
+                    int winnerPlayer = message.path("player").asInt(0);
+                    boolean databaseSaved = message.path(
+                            "databaseSaved").asBoolean(true);
+                    String finishMessage = message.path("message").asText();
+                    Platform.runLater(() -> {
+                        onlineCompletionSaved = databaseSaved;
+                        onlineCompletionConfirmed = true;
+                        if (!gameLogic.isGameOver() && winnerPlayer > 0) {
+                            int winner = winnerPlayer == 1
+                                    ? GameLogic.RED_PLAYER : GameLogic.BLACK_PLAYER;
+                            gameLogic.finishByTimeout(winner);
+                            timeoutEndedGame = true;
+                            refreshBoard();
+                        }
+                        gameStatus.setText(databaseGameId > 0
+                                ? AppText.text("{0} Database game ID: {1}",
+                                        finishMessage, databaseGameId)
+                                : AppText.text(finishMessage));
+                        updateGameStatus();
+                        showGameOverMessage();
+                    });
                 }
 
                 case "PERSISTENCE_ERROR" -> {
                     long databaseGameId = message.path("databaseGameId").asLong(-1);
-                    Platform.runLater(() -> gameStatus.setText(
-                            "Game ended, but its completion was not saved. Database game ID: "
-                                    + databaseGameId));
+                    Platform.runLater(() -> gameStatus.setText(AppText.text(
+                            "Game ended, but its completion was not saved. Database game ID: {0}",
+                            databaseGameId)));
                 }
 
                 case "RECONNECT_TIMEOUT" -> {
@@ -1085,7 +1369,8 @@ public class GameBoardController {
                             : "Could not save abandoned status for game ID: "
                                     + databaseGameId;
                     Platform.runLater(() -> gameStatus.setText(
-                            timeoutMessage + " " + persistenceStatus));
+                            AppText.text(timeoutMessage) + " "
+                                    + AppText.text(persistenceStatus)));
                 }
 
                 case "PLAYER_JOINED" ->
@@ -1100,7 +1385,8 @@ public class GameBoardController {
                 case "ERROR" -> {
                     awaitingServerMove = false;
                     System.err.println("Server error: " + message);
-                    Platform.runLater(() -> gameStatus.setText("Server rejected the move."));
+                    Platform.runLater(() -> gameStatus.setText(
+                            AppText.text("Server rejected the move.")));
                 }
 
                 default ->
@@ -1213,7 +1499,8 @@ public class GameBoardController {
         }
 
         if (webSocketClient == null || onlineGameId == null) {
-            gameStatus.setText("WebSocket connection is not configured.");
+            gameStatus.setText(AppText.text(
+                    "WebSocket connection is not configured."));
             return;
         }
 

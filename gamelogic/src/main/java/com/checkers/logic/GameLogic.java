@@ -19,8 +19,8 @@ import java.util.Map;
 // to GameRules.
 public class GameLogic {
 
-    public static final int red_player = Piece.red;
-    public static final int black_player = Piece.black;
+    public static final int RED_PLAYER = Piece.red;
+    public static final int BLACK_PLAYER = Piece.black;
 
     // Retained for compatibility with existing code.
     public static final int DRAW_TURN_LIMIT = 80;
@@ -37,7 +37,7 @@ public class GameLogic {
 
     private final Map<String, Integer> positionCounts = new HashMap<>();
 
-    private int currentPlayer = red_player;
+    private int currentPlayer = RED_PLAYER;
     private int forcedJumpIndex = -1;
     private int turnsWithoutProgress = 0;
     private GameState gameState = GameState.IN_PROGRESS;
@@ -153,6 +153,25 @@ public class GameLogic {
 
     public boolean isGameOver() {
         return gameState != GameState.IN_PROGRESS;
+    }
+
+    /** Ends the current game when the player to move runs out of time. */
+    public void finishByTimeout(int winner) {
+        if (winner != RED_PLAYER && winner != BLACK_PLAYER) {
+            throw new IllegalArgumentException("Winner must be a valid player.");
+        }
+        if (isGameOver()) {
+            return;
+        }
+        gameState = winner == RED_PLAYER
+                ? GameState.RED_WON
+                : GameState.BLACK_WON;
+        forcedJumpIndex = -1;
+        pendingTurns = List.of();
+        pendingStepIndex = 0;
+        turnStartIndex = -1;
+        pendingForfeitIndex = -1;
+        turnHadProgress = false;
     }
 
     public int getForcedJumpIndex() {
@@ -357,7 +376,7 @@ public class GameLogic {
 
     /** Checks whether a player has at least one complete legal turn. */
     public boolean hasAnyLegalMove(int player) {
-        if (player != red_player && player != black_player) {
+        if (player != RED_PLAYER && player != BLACK_PLAYER) {
             return false;
         }
         return !rules.getLegalTurns(board, player).isEmpty();
@@ -365,7 +384,7 @@ public class GameLogic {
 
     /** Checks whether any available legal turn begins with a capture. */
     public boolean hasAnyJump(int player) {
-        if (player != red_player && player != black_player) {
+        if (player != RED_PLAYER && player != BLACK_PLAYER) {
             return false;
         }
 
@@ -389,7 +408,7 @@ public class GameLogic {
 
     /** Counts the remaining pieces belonging to a player. */
     public int countPieces(int player) {
-        if (player != red_player && player != black_player) {
+        if (player != RED_PLAYER && player != BLACK_PLAYER) {
             return 0;
         }
 
@@ -454,7 +473,7 @@ public class GameLogic {
 
         if (countPieces(playerToMove) == 0
                 || !hasAnyLegalMove(playerToMove)) {
-            gameState = previousPlayer == red_player
+            gameState = previousPlayer == RED_PLAYER
                     ? GameState.RED_WON
                     : GameState.BLACK_WON;
             return;
@@ -498,16 +517,16 @@ public class GameLogic {
         if (piece == null || piece.isEmpty()) {
             return false;
         }
-        if (player == red_player) {
+        if (player == RED_PLAYER) {
             return piece.isRed();
         }
-        if (player == black_player) {
+        if (player == BLACK_PLAYER) {
             return piece.isBlack();
         }
         return false;
     }
 
     private int otherPlayer(int player) {
-        return player == red_player ? black_player : red_player;
+        return player == RED_PLAYER ? BLACK_PLAYER : RED_PLAYER;
     }
 }

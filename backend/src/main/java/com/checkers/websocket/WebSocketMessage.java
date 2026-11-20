@@ -12,6 +12,7 @@ public class WebSocketMessage {
     private String message;
     private String username;
     private Long databaseGameId;
+    private Boolean databaseSaved;
 
     public WebSocketMessage() {
     }
@@ -45,6 +46,20 @@ public class WebSocketMessage {
         this.message = message;
         this.username = username;
         this.databaseGameId = databaseGameId;
+    }
+
+    public WebSocketMessage(
+            String type,
+            String gameId,
+            Integer player,
+            Integer players,
+            String status,
+            String username,
+            String message,
+            Long databaseGameId,
+            Boolean databaseSaved) {
+        this(type, gameId, player, players, status, username, message, databaseGameId);
+        this.databaseSaved = databaseSaved;
     }
 
     // return the type of the WebSocket message
@@ -84,5 +99,9 @@ public class WebSocketMessage {
 
     public Long getDatabaseGameId() {
         return databaseGameId;
+    }
+
+    public Boolean getDatabaseSaved() {
+        return databaseSaved;
     }
 }

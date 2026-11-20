@@ -1,6 +1,7 @@
 package com.checkers.controller;
 
 import com.checkers.Main;
+import com.checkers.localization.AppText;
 import com.checkers.rules.GameRules;
 import com.checkers.variants.VariantRegistry;
 
@@ -22,9 +23,9 @@ public final class GameModeSelectionController {
     private final String variantId;
     private final ComboBox<ReinforcementLearningTrainer.Difficulty> difficultyPicker =
             new ComboBox<>();
-    private final RadioButton aiMode = new RadioButton("Play against AI");
+    private final RadioButton aiMode = new RadioButton(AppText.text("Play against AI"));
     private final Label modelStatus = new Label();
-    private final Button startButton = new Button("Start Game");
+    private final Button startButton = new Button(AppText.text("Start Game"));
 
     public GameModeSelectionController(Stage stage, String variantId) {
         if (stage == null || variantId == null || variantId.isBlank()) {
@@ -36,11 +37,11 @@ public final class GameModeSelectionController {
 
     public void show() {
         GameRules rules = VariantRegistry.defaults().get(variantId);
-        Label title = new Label(rules.getDisplayName());
+        Label title = new Label(AppText.text(rules.getDisplayName()));
         title.setStyle("-fx-font-family: Georgia; -fx-font-size: 25px;"
                 + " -fx-text-fill: #173c36;");
 
-        RadioButton localMode = new RadioButton("Local multiplayer");
+        RadioButton localMode = new RadioButton(AppText.text("Local multiplayer"));
         localMode.setSelected(true);
         ToggleGroup modes = new ToggleGroup();
         localMode.setToggleGroup(modes);
@@ -58,16 +59,16 @@ public final class GameModeSelectionController {
         startButton.setMaxWidth(Double.MAX_VALUE);
         AppTheme.stylePrimaryButton(startButton);
         startButton.setOnAction(event -> startGame());
-        Button backButton = new Button("Back to variants");
+        Button backButton = new Button(AppText.text("Back to variants"));
         AppTheme.styleSecondaryButton(backButton);
         backButton.setOnAction(event -> Main.showVariantSelection());
 
         VBox root = new VBox(18,
                 title,
-                new Label("Choose how you want to play."),
+                new Label(AppText.text("Choose how you want to play.")),
                 localMode,
                 aiMode,
-                new HBox(10, new Label("AI difficulty"), difficultyPicker),
+                new HBox(10, new Label(AppText.text("AI difficulty")), difficultyPicker),
                 modelStatus,
                 startButton,
                 backButton);
@@ -75,7 +76,7 @@ public final class GameModeSelectionController {
         root.setPadding(new Insets(36));
         AppTheme.applyBackground(root);
 
-        stage.setTitle("Neapolitan Checkers - Game Setup");
+        stage.setTitle(AppText.text("Neapolitan Checkers - Game Setup"));
         stage.setScene(new Scene(root, 520, 430));
         stage.setMinWidth(480);
         stage.setMinHeight(400);
@@ -88,8 +89,8 @@ public final class GameModeSelectionController {
         boolean available = !useAi || ReinforcementLearningTrainer.hasTrainedAgent(
                 variantId, difficultyPicker.getValue());
         modelStatus.setText(useAi && !available
-                ? "No model is packaged for this variant and level. Train it first."
-                : useAi ? "Trained model is available." : "");
+                ? AppText.text("No model is packaged for this variant and level. Train it first.")
+                : useAi ? AppText.text("Trained model is available.") : "");
         startButton.setDisable(!available);
     }
 

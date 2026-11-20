@@ -283,6 +283,93 @@ public class GameWebSocketHandler extends TextWebSocketHandler {
                     null,
                     "Game is now active. Both players are connected."
             );
+            sessionManager.startGameTimer(
+                    gameId, () -> handleTimerTick(gameId));
+        }
+    }
+
+    private void handleTimerTick(String gameId) {
+        GameRoom room = sessionManager.getRoom(gameId);
+        if (room == null) {
+            sessionManager.stopGameTimer(gameId);
+            return;
+        }
+
+        int expiredPlayer;
+        int winnerPlayer;
+        Long winnerUserId;
+        synchronized (room) {
+            if (room.getStatus() != GameRoom.Status.ACTIVE) {
+                return;
+            }
+            expiredPlayer = room.tickTimers();
+            if (expiredPlayer == 0) {
+                sendTimerUpdate(room);
+                return;
+            }
+
+            winnerPlayer = expiredPlayer == 1 ? 2 : 1;
+            int winnerColor = winnerPlayer == 1
+                    ? GameLogic.RED_PLAYER : GameLogic.BLACK_PLAYER;
+            room.getGameLogic().finishByTimeout(winnerColor);
+            room.finish();
+            winnerUserId = room.getUserId(winnerPlayer);
+        }
+
+        sessionManager.stopGameTimer(gameId);
+        broadcast(gameId, "GAME_COMPLETING", winnerPlayer,
+                room.getUsername(expiredPlayer),
+                "Time expired. Saving the result...");
+        boolean persisted = winnerUserId != null
+                && GameDAO.completeGame(room.getDatabaseGameId(), winnerUserId);
+        String winner = room.getUsername(winnerPlayer);
+        sendGameFinished(
+                room,
+                winnerPlayer,
+                winner,
+                winner + " won on time.",
+                persisted);
+    }
+
+    private void sendTimerUpdate(GameRoom room) {
+        int activePlayer = room.getGameLogic().getCurrentPlayer()
+                == GameLogic.RED_PLAYER ? 1 : 2;
+        Map<String, Object> timer = new HashMap<>();
+        timer.put("gameSecondsRemaining", room.getGameSecondsRemaining());
+        timer.put("moveSecondsRemaining", room.getMoveSecondsRemaining());
+        timer.put("activePlayer", activePlayer);
+        try {
+            broadcast(room.getGameId(), "TIMER", activePlayer, null,
+                    objectMapper.writeValueAsString(timer));
+        } catch (Exception exception) {
+            System.err.println("Could not encode timer update for "
+                    + room.getGameId() + ": " + exception.getMessage());
+        }
+    }
+
+    private void sendGameFinished(
+            GameRoom room,
+            int winnerPlayer,
+            String username,
+            String message,
+            boolean persisted) {
+        WebSocketMessage finished = new WebSocketMessage(
+                "GAME_FINISHED",
+                room.getGameId(),
+                winnerPlayer,
+                room.getPlayerCount(),
+                room.getStatus().name(),
+                username,
+                message,
+                room.getDatabaseGameId(),
+                persisted);
+        try {
+            sessionManager.sendToGame(
+                    room.getGameId(),
+                    objectMapper.writeValueAsString(finished));
+        } catch (Exception exception) {
+            System.err.println("Could not send game completion for "
+                    + room.getGameId() + ": " + exception.getMessage());
         }
     }
 
@@ -440,7 +527,7 @@ public class GameWebSocketHandler extends TextWebSocketHandler {
                         }
 
             int expectedPlayer = currentGame.getCurrentPlayer()
-                    == GameLogic.red_player ? 1 : 2;
+                    == GameLogic.RED_PLAYER ? 1 : 2;
 
             if (playerNumber != expectedPlayer) {
                 sendMessage(session, new WebSocketMessage(
@@ -533,6 +620,8 @@ public class GameWebSocketHandler extends TextWebSocketHandler {
 
                 soundCues.add(draw ? "DRAW" : "VICTORY");
                 animationCues.add(draw ? "DRAW" : "CELEBRATE");
+                broadcast(gameId, "GAME_COMPLETING", playerNumber, username,
+                        "Saving the completed game...");
             }
 
             int moveNumber = room.getSavedMoveCount() + 1;
@@ -604,25 +693,28 @@ public class GameWebSocketHandler extends TextWebSocketHandler {
                         "The move could not be confirmed as saved. "
                                 + "The live board has not changed."
                 ));
+                if (temporaryGame.isGameOver()) {
+                    broadcast(gameId, "GAME_SAVE_FAILED", playerNumber,
+                                    username, "The completed game could not be saved.");
+                }
                 return;
             }
 
             room.commitSavedMove(temporaryGame);
+            if (!temporaryGame.isMultiJumpInProgress()) {
+                room.resetMoveTimer();
+            }
 
+            boolean persisted = true;
             if (temporaryGame.isGameOver()) {
                 boolean draw = temporaryGame.getGameState() == GameLogic.GameState.DRAW;
                 Long winnerUserId = draw ? null : playerId;
                 room.finish();
-                boolean persisted = GameDAO.completeGame(
-                        room.getDatabaseGameId(), winnerUserId);
+                sessionManager.stopGameTimer(gameId);
+                persisted = GameDAO.completeGame(
+                                room.getDatabaseGameId(), winnerUserId);
                 if (!persisted) {
                     System.err.println("CRITICAL: game " + gameId + " ended in memory but database completion failed.");
-                }
-                broadcast(gameId, "GAME_FINISHED", playerNumber, username,
-                        draw ? "Game ended in a draw." : username + " won the game.");
-                if (!persisted) {
-                    broadcast(gameId, "PERSISTENCE_ERROR", playerNumber, username,
-                            "Game ended, but completion was not confirmed in the database.");
                 }
             }
 
@@ -633,6 +725,19 @@ public class GameWebSocketHandler extends TextWebSocketHandler {
                     username,
                     savedMoveMessage
             );
+            if (temporaryGame.isGameOver()) {
+                boolean draw = temporaryGame.getGameState()
+                        == GameLogic.GameState.DRAW;
+                sendGameFinished(
+                        room,
+                        playerNumber,
+                        username,
+                        draw ? "Game ended in a draw."
+                                : username + " won the game.",
+                        persisted);
+            } else {
+                sendTimerUpdate(room);
+            }
         }
 
     }

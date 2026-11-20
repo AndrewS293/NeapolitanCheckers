@@ -2,6 +2,7 @@ package com.checkers.controller;
 
 import com.checkers.Main;
 import com.checkers.api.AuthApi;
+import com.checkers.localization.AppText;
 import com.checkers.model.User;
 import com.checkers.session.SessionManager;
 
@@ -25,7 +26,7 @@ public class LoginController {
     public Scene createScene() {
 
         Label title =
-                new Label("Neapolitan Checkers");
+                new Label(AppText.text("Neapolitan Checkers"));
 
         title.setStyle(
                 "-fx-font-size: 28px; " +
@@ -33,27 +34,27 @@ public class LoginController {
         );
 
         Label subtitle =
-                new Label("Login");
+                new Label(AppText.text("Login"));
 
         TextField usernameField =
                 new TextField();
 
-        usernameField.setPromptText("Username");
+        usernameField.setPromptText(AppText.text("Username"));
 
         PasswordField passwordField =
                 new PasswordField();
 
-        passwordField.setPromptText("Password");
+        passwordField.setPromptText(AppText.text("Password"));
 
         Label message =
                 new Label();
 
         Button loginButton =
-                new Button("Login");
+                new Button(AppText.text("Login"));
         AppTheme.stylePrimaryButton(loginButton);
 
         Button registerButton =
-                new Button("Create Account");
+                new Button(AppText.text("Create Account"));
         AppTheme.styleSecondaryButton(registerButton);
 
         loginButton.setOnAction(event -> {
@@ -73,7 +74,7 @@ public class LoginController {
             } catch (Exception e) {
 
                 message.setText(
-                        "Invalid username or password."
+                        AppText.text("Invalid username or password.")
                 );
             }
         });
@@ -97,6 +98,8 @@ public class LoginController {
         root.getChildren().addAll(
                 title,
                 subtitle,
+                new Label(AppText.text("Language")),
+                AppText.languagePicker(Main::showLogin),
                 usernameField,
                 passwordField,
                 loginButton,
