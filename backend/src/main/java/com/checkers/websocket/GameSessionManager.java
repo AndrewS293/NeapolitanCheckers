@@ -32,6 +32,14 @@ public class GameSessionManager {
 
     private final Map<String, ScheduledFuture<?>> reconnectTimeouts =
             new ConcurrentHashMap<>();
+    private final ScheduledExecutorService gameTimerExecutor =
+            Executors.newScheduledThreadPool(2, runnable -> {
+                Thread thread = new Thread(runnable, "checkers-game-timers");
+                thread.setDaemon(true);
+                return thread;
+            });
+    private final Map<String, ScheduledFuture<?>> gameTimers =
+            new ConcurrentHashMap<>();
 
     private String timeoutKey(String gameId, int playerNumber) {
         return gameId + ":" + playerNumber;
@@ -229,6 +237,7 @@ public class GameSessionManager {
 
                 currentRoom.finish();
             }
+            stopGameTimer(gameId);
 
             boolean persisted = GameDAO.abandonGame(
                     currentRoom.getDatabaseGameId());
@@ -274,6 +283,27 @@ public class GameSessionManager {
 
         if (timeout != null) {
             timeout.cancel(false);
+        }
+    }
+
+    public void startGameTimer(String gameId, Runnable tick) {
+        GameRoom room = rooms.get(gameId);
+        if (room == null || tick == null || room.getStatus() != GameRoom.Status.ACTIVE) {
+            return;
+        }
+        room.startTimers();
+        ScheduledFuture<?> timer = gameTimerExecutor.scheduleAtFixedRate(
+                tick, 1, 1, TimeUnit.SECONDS);
+        ScheduledFuture<?> existing = gameTimers.putIfAbsent(gameId, timer);
+        if (existing != null) {
+            timer.cancel(false);
+        }
+    }
+
+    public void stopGameTimer(String gameId) {
+        ScheduledFuture<?> timer = gameTimers.remove(gameId);
+        if (timer != null) {
+            timer.cancel(false);
         }
     }
 

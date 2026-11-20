@@ -2,6 +2,7 @@ package com.checkers.controller;
 
 import com.checkers.Main;
 import com.checkers.api.AuthApi;
+import com.checkers.localization.AppText;
 import com.checkers.model.User;
 
 import javafx.geometry.Insets;
@@ -25,7 +26,7 @@ public class RegisterController {
     public Scene createScene() {
 
         Label title =
-                new Label("Create your account");
+                new Label(AppText.text("Create your account"));
 
         title.setStyle(
                 "-fx-font-size: 28px; " +
@@ -42,7 +43,7 @@ public class RegisterController {
         );
 
         Label badge =
-                new Label("♟  WELCOME TO NEAPOLITAN CHECKERS  ♟ ");
+                new Label(AppText.text("♟  WELCOME TO NEAPOLITAN CHECKERS  ♟ "));
 
         badge.setStyle(
                 "-fx-background-color: #FBE9D7; " +
@@ -56,27 +57,28 @@ public class RegisterController {
         TextField usernameField =
                 new TextField();
 
-        usernameField.setPromptText("Username");
+        usernameField.setPromptText(AppText.text("Username"));
 
         TextField emailField =
                 new TextField();
 
-        emailField.setPromptText("Email address");
+        emailField.setPromptText(AppText.text("Email address"));
 
         PasswordField passwordField =
                 new PasswordField();
 
-        passwordField.setPromptText("Password");
+        passwordField.setPromptText(AppText.text("Password"));
 
         PasswordField confirmField =
                 new PasswordField();
 
         confirmField.setPromptText(
-                "Confirm password"
+                AppText.text("Confirm password")
         );
 
         Label passwordHint =
-                new Label("Password must be 8+ characters with uppercase, lowercase, and a number.");
+                new Label(AppText.text(
+                        "Password must be 8+ characters with uppercase, lowercase, and a number."));
 
         passwordHint.setStyle(
                 "-fx-font-size: 11px; " +
@@ -93,7 +95,7 @@ public class RegisterController {
         );
 
         Button registerButton =
-                new Button("Create account");
+                new Button(AppText.text("Create account"));
 
         registerButton.setStyle(
                 "-fx-background-color: " + AppTheme.PRIMARY + "; " +
@@ -105,7 +107,7 @@ public class RegisterController {
         );
 
         Button backButton =
-                new Button("Back to login");
+                new Button(AppText.text("Back to login"));
 
         backButton.setStyle(
                 "-fx-background-color: transparent; " +
@@ -230,8 +232,7 @@ public class RegisterController {
                         );
 
                 message.setText(
-                        "Account created successfully! " +
-                        "You can now sign in."
+                        AppText.text("Account created successfully! You can now sign in.")
                 );
                 message.setStyle(
                         "-fx-font-size: 12px; " +
@@ -255,7 +256,7 @@ public class RegisterController {
                         error.isBlank()) {
 
                     error =
-                            "Registration failed. Please try again.";
+                            AppText.text("Registration failed. Please try again.");
                 }
 
                 message.setText(error);
@@ -337,7 +338,7 @@ public class RegisterController {
         if (username.isEmpty()) {
 
             message.setText(
-                    "Username is required."
+                    AppText.text("Username is required.")
             );
 
             return false;
@@ -346,7 +347,7 @@ public class RegisterController {
         if (username.length() < 3) {
 
             message.setText(
-                    "Username must be at least 3 characters."
+                    AppText.text("Username must be at least 3 characters.")
             );
 
             return false;
@@ -355,7 +356,7 @@ public class RegisterController {
         if (username.length() > 50) {
 
             message.setText(
-                    "Username cannot exceed 50 characters."
+                    AppText.text("Username cannot exceed 50 characters.")
             );
 
             return false;
@@ -365,7 +366,7 @@ public class RegisterController {
                 "^[a-zA-Z0-9_]+$")) {
 
             message.setText(
-                    "Username can only contain letters, numbers, and underscores."
+                    AppText.text("Username can only contain letters, numbers, and underscores.")
             );
 
             return false;
@@ -391,7 +392,7 @@ public class RegisterController {
         if (email.isEmpty()) {
 
             message.setText(
-                    "Email is required."
+                    AppText.text("Email is required.")
             );
 
             return false;
@@ -401,7 +402,7 @@ public class RegisterController {
                 "^[A-Za-z0-9+_.-]+@[A-Za-z0-9.-]+$")) {
 
             message.setText(
-                    "Please enter a valid email address."
+                    AppText.text("Please enter a valid email address.")
             );
 
             return false;
@@ -427,7 +428,7 @@ public class RegisterController {
         if (password.isEmpty()) {
 
             message.setText(
-                    "Password is required."
+                    AppText.text("Password is required.")
             );
 
             return false;
@@ -436,7 +437,7 @@ public class RegisterController {
         if (password.length() < 8) {
 
             message.setText(
-                    "Password must be at least 8 characters."
+                    AppText.text("Password must be at least 8 characters.")
             );
 
             return false;
@@ -445,7 +446,7 @@ public class RegisterController {
         if (password.length() > 50) {
 
             message.setText(
-                    "Password cannot exceed 50 characters."
+                    AppText.text("Password cannot exceed 50 characters.")
             );
 
             return false;
@@ -454,7 +455,7 @@ public class RegisterController {
         if (password.contains(" ")) {
 
             message.setText(
-                    "Password cannot contain spaces."
+                    AppText.text("Password cannot contain spaces.")
             );
 
             return false;
@@ -464,7 +465,7 @@ public class RegisterController {
         if (password.matches(".*[<>\"'%;)(&+].*")) {
 
             message.setText(
-                    "Password cannot contain special characters like <, >, \", ', %, ;, ), (, &, +"
+                    AppText.text("Password cannot contain special characters like <, >, \", ', %, ;, ), (, &, +")
             );
 
             return false;
@@ -476,7 +477,7 @@ public class RegisterController {
             password.matches(".*\\d.*")) {
         } else {
             message.setText(
-                    "Password must contain at least one uppercase letter, one lowercase letter, and one number."
+                    AppText.text("Password must contain at least one uppercase letter, one lowercase letter, and one number.")
             );
 
             return false;
@@ -506,7 +507,7 @@ public class RegisterController {
         if (confirm.isEmpty()) {
 
             message.setText(
-                    "Please confirm your password."
+                    AppText.text("Please confirm your password.")
             );
 
             return false;
@@ -515,7 +516,7 @@ public class RegisterController {
         if (!password.equals(confirm)) {
 
             message.setText(
-                    "Passwords do not match."
+                    AppText.text("Passwords do not match.")
             );
 
             return false;

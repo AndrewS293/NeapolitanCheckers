@@ -1,5 +1,6 @@
 package com.checkers.controller;
 
+import com.checkers.localization.AppText;
 import javafx.scene.Parent;
 import javafx.scene.control.Button;
 
@@ -15,6 +16,7 @@ public final class AppTheme {
     private AppTheme() { }
 
     public static void applyBackground(Parent root) {
+        AppText.applyOrientation(root);
         root.setStyle("-fx-background-color: " + BACKGROUND + ";"
                 + " -fx-font-family: 'Georgia';");
     }

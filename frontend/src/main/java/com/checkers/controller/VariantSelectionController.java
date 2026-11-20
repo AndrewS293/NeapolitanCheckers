@@ -1,6 +1,7 @@
 package com.checkers.controller;
 
 import com.checkers.Main;
+import com.checkers.localization.AppText;
 import com.checkers.variants.GameFactory;
 import com.checkers.variants.VariantRegistry;
 
@@ -54,12 +55,12 @@ public class VariantSelectionController {
         }
 
         public void show() {
-                Label title = new Label("Choose Your Checkers Variant");
+                Label title = new Label(AppText.text("Choose Your Checkers Variant"));
                 title.setFont(Font.font("Georgia", 26));
                 title.setStyle("-fx-text-fill: #173c36;");
 
                 Label subtitle = new Label(
-                                "Select the ruleset you want to play.");
+                                AppText.text("Select the ruleset you want to play."));
                 subtitle.setFont(Font.font("Arial", 14));
                 subtitle.setStyle("-fx-text-fill: #52635d;");
 
@@ -99,7 +100,7 @@ public class VariantSelectionController {
                 VBox heading = new VBox(6, title, subtitle);
                 heading.setAlignment(Pos.CENTER_LEFT);
 
-                Button trainButton = new Button("Train Reinforcement Learning AI");
+                Button trainButton = new Button(AppText.text("Train Reinforcement Learning AI"));
                 trainButton.setMaxWidth(Double.MAX_VALUE);
                 AppTheme.stylePrimaryButton(trainButton);
                 trainButton.setOnAction(event -> Main.showAiTraining());
@@ -111,7 +112,7 @@ public class VariantSelectionController {
                 VBox.setVgrow(options, Priority.ALWAYS);
 
                 Scene scene = new Scene(root, 680, 720);
-                stage.setTitle("Neapolitan Checkers - Select Variant");
+                stage.setTitle(AppText.text("Neapolitan Checkers - Select Variant"));
                 stage.setScene(scene);
                 stage.setMinWidth(560);
                 stage.setMinHeight(560);
@@ -124,29 +125,29 @@ public class VariantSelectionController {
                         String description,
                         String variantId) {
 
-                Label nameLabel = new Label(name);
+                Label nameLabel = new Label(AppText.text(name));
                 nameLabel.setFont(Font.font("Georgia", 18));
                 nameLabel.setStyle("-fx-text-fill: #173c36;");
 
-                Label boardLabel = new Label(boardInfo);
+                Label boardLabel = new Label(AppText.text(boardInfo));
                 boardLabel.setFont(Font.font("Arial", 12));
                 boardLabel.setWrapText(true);
                 boardLabel.setStyle(
                                 "-fx-font-weight: bold;"
                                                 + "-fx-text-fill: #a64b3c;");
 
-                Label descriptionLabel = new Label(description);
+                Label descriptionLabel = new Label(AppText.text(description));
                 descriptionLabel.setWrapText(true);
                 descriptionLabel.setMaxWidth(260);
                 descriptionLabel.setAlignment(Pos.CENTER);
 
-                Button playButton = new Button("Play " + name);
+                Button playButton = new Button(AppText.text("Play {0}", AppText.text(name)));
                 playButton.setMaxWidth(Double.MAX_VALUE);
                 playButton.setPrefHeight(32);
                 boolean available = gameFactory.getAvailableVariants().stream()
                                 .anyMatch(variant -> variant.id().equals(variantId));
                 playButton.setDisable(!available);
-                playButton.setText("Play " + name);
+                playButton.setText(AppText.text("Play {0}", AppText.text(name)));
                 AppTheme.stylePrimaryButton(playButton);
 
                 playButton.setOnAction(event -> {

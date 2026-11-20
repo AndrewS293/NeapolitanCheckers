@@ -6,6 +6,7 @@ import com.checkers.logic.GameLogic;
 import com.checkers.logic.Move.MoveStep;
 import com.checkers.logic.Move.TurnMove;
 import com.checkers.logic.Piece;
+import com.checkers.localization.AppText;
 import com.checkers.rules.GameRules;
 import com.checkers.variants.VariantRegistry;
 import com.fasterxml.jackson.databind.JsonNode;
@@ -76,7 +77,7 @@ public final class ReinforcementLearningTrainer {
 
         @Override
         public String toString() {
-            return label;
+            return AppText.text(label);
         }
     }
 
@@ -86,7 +87,8 @@ public final class ReinforcementLearningTrainer {
     private final ComboBox<GameRules> variantPicker = new ComboBox<>();
     private final Spinner<Integer> episodeCount = new Spinner<>(1, 1_000_000, 300, 50);
     private final Spinner<Integer> previewInterval = new Spinner<>(1, 100_000, 25, 1);
-    private final Label status = new Label("Choose a variant and start self-play training.");
+    private final Label status = new Label(
+            AppText.text("Choose a variant and start self-play training."));
     private final ProgressBar progress = new ProgressBar(0);
     private final GridPane boardView = new GridPane();
     private Button startButton;
@@ -101,7 +103,7 @@ public final class ReinforcementLearningTrainer {
     }
 
     public void show() {
-        Label title = new Label("Reinforcement Learning Lab");
+        Label title = new Label(AppText.text("Reinforcement Learning Lab"));
         title.setStyle("-fx-font-family: Georgia; -fx-font-size: 25px;"
                 + " -fx-text-fill: #173c36;");
 
@@ -112,14 +114,14 @@ public final class ReinforcementLearningTrainer {
             @Override
             protected void updateItem(GameRules rules, boolean empty) {
                 super.updateItem(rules, empty);
-                setText(empty || rules == null ? null : rules.getDisplayName());
+                setText(empty || rules == null ? null : AppText.text(rules.getDisplayName()));
             }
         });
         variantPicker.setButtonCell(new javafx.scene.control.ListCell<>() {
             @Override
             protected void updateItem(GameRules rules, boolean empty) {
                 super.updateItem(rules, empty);
-                setText(empty || rules == null ? null : rules.getDisplayName());
+                setText(empty || rules == null ? null : AppText.text(rules.getDisplayName()));
             }
         });
         variantPicker.setOnAction(event -> drawBoard(new GameLogic(variantPicker.getValue())));
@@ -130,10 +132,10 @@ public final class ReinforcementLearningTrainer {
         GameRules firstVariant = variants.getFirst();
         drawBoard(new GameLogic(firstVariant));
 
-        startButton = new Button("Train all 3 levels");
+        startButton = new Button(AppText.text("Train all 3 levels"));
         AppTheme.stylePrimaryButton(startButton);
         startButton.setOnAction(event -> startTraining());
-        cancelButton = new Button("Cancel");
+        cancelButton = new Button(AppText.text("Cancel"));
         AppTheme.styleSecondaryButton(cancelButton);
         cancelButton.setDisable(true);
         cancelButton.setOnAction(event -> {
@@ -141,14 +143,14 @@ public final class ReinforcementLearningTrainer {
                 trainingTask.cancel(true);
             }
         });
-        Button backButton = new Button("Back");
+        Button backButton = new Button(AppText.text("Back"));
         AppTheme.styleSecondaryButton(backButton);
         backButton.setOnAction(event -> Main.showVariantSelection());
 
         HBox settings = new HBox(10,
-                labeledControl("Variant", variantPicker),
-                labeledControl("Episodes per level", episodeCount),
-                labeledControl("Show a game every", previewInterval));
+                labeledControl(AppText.text("Variant"), variantPicker),
+                labeledControl(AppText.text("Episodes per level"), episodeCount),
+                labeledControl(AppText.text("Show a game every"), previewInterval));
         settings.setAlignment(Pos.CENTER_LEFT);
         HBox.setHgrow(settings.getChildren().getFirst(), Priority.ALWAYS);
         HBox actions = new HBox(10, startButton, cancelButton, backButton);
@@ -157,7 +159,8 @@ public final class ReinforcementLearningTrainer {
 
         VBox controls = new VBox(12,
                 title,
-                new Label("The preview updates during each selected checkpoint episode."),
+                new Label(AppText.text(
+                        "The preview updates during each selected checkpoint episode.")),
                 settings,
                 actions,
                 progress,
@@ -168,9 +171,10 @@ public final class ReinforcementLearningTrainer {
         root.setTop(controls);
         root.setCenter(boardView);
         AppTheme.applyBackground(root);
+        AppText.applyOrientation(root);
         BorderPane.setMargin(boardView, new Insets(0, 22, 22, 22));
 
-        stage.setTitle("Neapolitan Checkers - RL Training");
+        stage.setTitle(AppText.text("Neapolitan Checkers - RL Training"));
         stage.setScene(new Scene(root, 860, 760));
         stage.setMinWidth(680);
         stage.setMinHeight(620);
@@ -210,11 +214,13 @@ public final class ReinforcementLearningTrainer {
                         }
                         long complete = (long) level * episodes + episode;
                         updateProgress(complete, totalEpisodes);
-                        updateMessage(difficulty + " | episode " + episode + "/" + episodes
-                                + " | latest result: " + result.getGameResultMessage());
+                        updateMessage(AppText.text("{0} | episode {1}/{2} | latest result: {3}",
+                                difficulty, episode, episodes,
+                                AppText.text(result.getGameResultMessage())));
                     }
                     saveAgent(agent);
-                    updateMessage(difficulty + " model saved for " + rules.getDisplayName());
+                    updateMessage(AppText.text("{0} model saved for {1}",
+                            difficulty, AppText.text(rules.getDisplayName())));
                 }
                 return null;
             }
@@ -224,10 +230,12 @@ public final class ReinforcementLearningTrainer {
         cancelButton.setDisable(false);
         progress.progressProperty().bind(trainingTask.progressProperty());
         status.textProperty().bind(trainingTask.messageProperty());
-        trainingTask.setOnSucceeded(event -> finishTraining("Training complete."));
-        trainingTask.setOnCancelled(event -> finishTraining("Training cancelled. Completed models are saved."));
+        trainingTask.setOnSucceeded(event -> finishTraining(AppText.text("Training complete.")));
+        trainingTask.setOnCancelled(event -> finishTraining(
+                AppText.text("Training cancelled. Completed models are saved.")));
         trainingTask.setOnFailed(event -> finishTraining(
-                "Training failed: " + trainingTask.getException().getMessage()));
+                AppText.text("Training failed: {0}",
+                        AppText.text(trainingTask.getException().getMessage()))));
         Thread worker = new Thread(trainingTask, "checkers-rl-training");
         worker.setDaemon(true);
         worker.start();
@@ -344,8 +352,8 @@ public final class ReinforcementLearningTrainer {
 
     private static double[] features(GameLogic game, int player) {
         Board board = game.getBoard();
-        int opponent = player == GameLogic.red_player
-                ? GameLogic.black_player : GameLogic.red_player;
+        int opponent = player == GameLogic.RED_PLAYER
+                ? GameLogic.BLACK_PLAYER : GameLogic.RED_PLAYER;
         double ownMen = 0;
         double otherMen = 0;
         double ownKings = 0;
@@ -362,8 +370,8 @@ public final class ReinforcementLearningTrainer {
             if (piece == null || piece.isEmpty()) {
                 continue;
             }
-            boolean ours = player == GameLogic.red_player ? piece.isRed() : piece.isBlack();
-            boolean theirs = player == GameLogic.red_player ? piece.isBlack() : piece.isRed();
+            boolean ours = player == GameLogic.RED_PLAYER ? piece.isRed() : piece.isBlack();
+            boolean theirs = player == GameLogic.RED_PLAYER ? piece.isBlack() : piece.isRed();
             if (!ours && !theirs) {
                 continue;
             }
@@ -372,7 +380,7 @@ public final class ReinforcementLearningTrainer {
                     ownKings++;
                 } else {
                     ownMen++;
-                    ownAdvance += player == GameLogic.red_player
+                    ownAdvance += player == GameLogic.RED_PLAYER
                             ? size - 1 - board.rowOf(index) : board.rowOf(index);
                 }
                 ownCenter += centerValue(board, index);
@@ -381,7 +389,7 @@ public final class ReinforcementLearningTrainer {
                     otherKings++;
                 } else {
                     otherMen++;
-                    otherAdvance += player == GameLogic.red_player
+                    otherAdvance += player == GameLogic.RED_PLAYER
                             ? board.rowOf(index) : size - 1 - board.rowOf(index);
                 }
                 otherCenter += centerValue(board, index);
@@ -410,8 +418,8 @@ public final class ReinforcementLearningTrainer {
     private static double terminalValue(GameLogic game, int player) {
         return switch (game.getGameState()) {
             case DRAW, IN_PROGRESS -> 0;
-            case RED_WON -> player == GameLogic.red_player ? 1 : -1;
-            case BLACK_WON -> player == GameLogic.black_player ? 1 : -1;
+            case RED_WON -> player == GameLogic.RED_PLAYER ? 1 : -1;
+            case BLACK_WON -> player == GameLogic.BLACK_PLAYER ? 1 : -1;
         };
     }
 
@@ -599,7 +607,7 @@ public final class ReinforcementLearningTrainer {
             GameLogic game, TrainedAgent agent, boolean onlineMode, boolean thinking) {
         return game != null && agent != null && !onlineMode && !thinking
                 && !game.isGameOver()
-                && game.getCurrentPlayer() == GameLogic.black_player
+                && game.getCurrentPlayer() == GameLogic.BLACK_PLAYER
                 && agent.variantId.equals(game.getConfig().getVariantId())
                 && agent.boardSize == game.getConfig().getBoardSize();
     }

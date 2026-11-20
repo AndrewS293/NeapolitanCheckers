@@ -1,5 +1,6 @@
 package com.checkers.websocket;
 
+import com.checkers.localization.AppText;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
@@ -65,29 +66,31 @@ public class GameWebSocketClient implements WebSocket.Listener {
                 }
             });
 
-            statusHandler.accept("Connecting to game " + gameId + "...");
+            statusHandler.accept(AppText.text("Connecting to game {0}...", gameId));
 
             builder.buildAsync(uri, this)
                     .whenComplete((socket, error) -> {
                         if (error != null) {
                             statusHandler.accept(
-                                    "Connection failed: " + error.getMessage()
+                                    AppText.text("Connection failed: {0}",
+                                            error.getMessage())
                             );
                         } else {
                             webSocket = socket;
-                            statusHandler.accept("WebSocket connected.");
+                            statusHandler.accept(AppText.text("WebSocket connected."));
                         }
                     });
 
         } catch (Exception e) {
-            statusHandler.accept("Connection error: " + e.getMessage());
+            statusHandler.accept(AppText.text("Connection error: {0}",
+                    e.getMessage()));
         }
     }
 
     @Override
     public void onOpen(WebSocket webSocket) {
         this.webSocket = webSocket;
-        statusHandler.accept("Connected to game server.");
+        statusHandler.accept(AppText.text("Connected to game server."));
         webSocket.request(1);
     }
 
@@ -142,7 +145,8 @@ public class GameWebSocketClient implements WebSocket.Listener {
 
     @Override
     public void onError(WebSocket webSocket, Throwable error) {
-        statusHandler.accept("WebSocket error: " + error.getMessage());
+        statusHandler.accept(AppText.text("WebSocket error: {0}",
+                error.getMessage()));
     }
 
     @Override
@@ -151,7 +155,7 @@ public class GameWebSocketClient implements WebSocket.Listener {
             int statusCode,
             String reason) {
 
-        statusHandler.accept("Disconnected: " + reason);
+        statusHandler.accept(AppText.text("Disconnected: {0}", reason));
         return null;
     }
 
@@ -161,7 +165,7 @@ public class GameWebSocketClient implements WebSocket.Listener {
         if (current != null) {
             current.sendText(json, true);
         } else {
-            statusHandler.accept("Cannot send: not connected.");
+            statusHandler.accept(AppText.text("Cannot send: not connected."));
         }
     }
 

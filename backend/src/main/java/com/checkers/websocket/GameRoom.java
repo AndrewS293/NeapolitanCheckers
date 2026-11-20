@@ -6,6 +6,8 @@ import com.checkers.logic.GameLogic;
 /** In-memory authoritative state for one live room. */
 public class GameRoom {
     public enum Status { WAITING, ACTIVE, FINISHED }
+    public static final int GAME_DURATION_SECONDS = 15 * 60;
+    public static final int MOVE_DURATION_SECONDS = 60;
     private final String gameId; private final long databaseGameId;
     private final GameVisibility visibility; private final String joinCode; private final String variantId;
     private WebSocketSession player1,player2;
@@ -14,6 +16,9 @@ public class GameRoom {
     private Status status=Status.WAITING;
     private GameLogic gameLogic;
     private int savedMoveCount;
+    private int gameSecondsRemaining = GAME_DURATION_SECONDS;
+    private int moveSecondsRemaining = MOVE_DURATION_SECONDS;
+    private boolean timersStarted;
 
     public GameRoom(String gameId,long databaseGameId,GameVisibility visibility,String joinCode,String variantId,GameLogic gameLogic){
         this.gameId=gameId;this.databaseGameId=databaseGameId;this.visibility=visibility;this.joinCode=joinCode;
@@ -25,6 +30,25 @@ public class GameRoom {
     public synchronized WebSocketSession getPlayer1(){return player1;} public synchronized WebSocketSession getPlayer2(){return player2;}
     public synchronized Status getStatus(){return status;} public synchronized GameLogic getGameLogic(){return gameLogic;}
     public synchronized int getSavedMoveCount(){return savedMoveCount;}
+    public synchronized int getGameSecondsRemaining(){return gameSecondsRemaining;}
+    public synchronized int getMoveSecondsRemaining(){return moveSecondsRemaining;}
+    public synchronized boolean areTimersStarted(){return timersStarted;}
+    public synchronized void startTimers(){
+        if(status!=Status.FINISHED)timersStarted=true;
+    }
+    /** Returns the player whose clock expired, or 0 while the game can continue. */
+    public synchronized int tickTimers(){
+        if(!timersStarted||status!=Status.ACTIVE)return 0;
+        gameSecondsRemaining=Math.max(0,gameSecondsRemaining-1);
+        moveSecondsRemaining=Math.max(0,moveSecondsRemaining-1);
+        if(gameSecondsRemaining==0||moveSecondsRemaining==0)
+            return gameLogic.getCurrentPlayer()==GameLogic.RED_PLAYER?1:2;
+        return 0;
+    }
+    public synchronized void resetMoveTimer(){
+        if(timersStarted&&status!=Status.FINISHED)
+            moveSecondsRemaining=MOVE_DURATION_SECONDS;
+    }
     public synchronized void setSavedMoveCount(int count){if(count<0)throw new IllegalArgumentException("Move count cannot be negative.");savedMoveCount=count;}
     public synchronized void commitSavedMove(GameLogic validatedGame){gameLogic=java.util.Objects.requireNonNull(validatedGame);savedMoveCount++;}
     public synchronized String getPlayer1Username(){return player1Username;} public synchronized String getPlayer2Username(){return player2Username;}

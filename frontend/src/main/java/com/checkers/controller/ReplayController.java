@@ -4,6 +4,7 @@ import com.checkers.Main;
 import com.checkers.api.GameApi;
 import com.checkers.model.User;
 import com.checkers.session.SessionManager;
+import com.checkers.localization.AppText;
 import com.fasterxml.jackson.databind.JsonNode;
 
 import java.util.concurrent.CompletableFuture;
@@ -36,19 +37,19 @@ public class ReplayController {
     // Creates the screen that displays the player's completed games.
     public Scene createScene() {
 
-        Label title = new Label("Game History and Replays");
+        Label title = new Label(AppText.text("Game History and Replays"));
         title.setStyle(
                 "-fx-font-size: 30px;"
                         + "-fx-font-weight: bold;"
                         + "-fx-text-fill: " + AppTheme.INK + ";");
 
         Label instructions = new Label(
-                "Select a completed game to watch its replay.");
+                AppText.text("Select a completed game to watch its replay."));
         instructions.setStyle(
                 "-fx-font-size: 16px;"
                         + "-fx-text-fill: " + AppTheme.MUTED + ";");
 
-        Label statusLabel = new Label("Loading your completed games...");
+        Label statusLabel = new Label(AppText.text("Loading your completed games..."));
         statusLabel.setStyle(
                 "-fx-font-size: 14px;"
                         + "-fx-text-fill: " + AppTheme.MUTED + ";");
@@ -56,10 +57,10 @@ public class ReplayController {
         // Creates the table that displays the saved games.
         TableView<ReplayGame> historyTable = createHistoryTable();
         historyTable.setPlaceholder(
-                new Label("No completed games were found."));
+                new Label(AppText.text("No completed games were found.")));
 
         // This button will open the replay viewer in the next step.
-        Button watchReplayButton = new Button("Watch Selected Replay");
+        Button watchReplayButton = new Button(AppText.text("Watch Selected Replay"));
         AppTheme.stylePrimaryButton(watchReplayButton);
         watchReplayButton.setDisable(true);
 
@@ -72,18 +73,18 @@ public class ReplayController {
                         watchReplayButton.setDisable(false);
 
                         statusLabel.setText(
-                                "Selected Game #" + selectedGameId);
+                                AppText.text("Selected Game #{0}", selectedGameId));
                     }
                 });
 
         watchReplayButton.setOnAction(event -> {
             statusLabel.setText(
-                    "Opening replay for Game #" + selectedGameId + "...");
+                    AppText.text("Opening replay for Game #{0}...", selectedGameId));
 
             // The replay board will be connected to this button next.
         });
 
-        Button refreshButton = new Button("Refresh History");
+        Button refreshButton = new Button(AppText.text("Refresh History"));
         AppTheme.styleSecondaryButton(refreshButton);
 
         // Reloads the completed games from the database.
@@ -93,7 +94,7 @@ public class ReplayController {
             loadHistory(historyTable, statusLabel);
         });
 
-        Button backButton = new Button("Back to Main Menu");
+        Button backButton = new Button(AppText.text("Back to Main Menu"));
         AppTheme.styleSecondaryButton(backButton);
         backButton.setOnAction(event -> Main.showMainMenu());
 
@@ -140,23 +141,23 @@ public class ReplayController {
         table.setColumnResizePolicy(
                 TableView.CONSTRAINED_RESIZE_POLICY);
 
-        TableColumn<ReplayGame, String> dateColumn = new TableColumn<>("Date");
+        TableColumn<ReplayGame, String> dateColumn = new TableColumn<>(AppText.text("Date"));
         dateColumn.setCellValueFactory(game -> new ReadOnlyStringWrapper(
                 game.getValue().date()));
 
-        TableColumn<ReplayGame, String> idColumn = new TableColumn<>("Game ID");
+        TableColumn<ReplayGame, String> idColumn = new TableColumn<>(AppText.text("Game ID"));
         idColumn.setCellValueFactory(game -> new ReadOnlyStringWrapper(
                 String.valueOf(game.getValue().gameId())));
 
-        TableColumn<ReplayGame, String> opponentColumn = new TableColumn<>("Opponent");
+        TableColumn<ReplayGame, String> opponentColumn = new TableColumn<>(AppText.text("Opponent"));
         opponentColumn.setCellValueFactory(game -> new ReadOnlyStringWrapper(
                 game.getValue().opponent()));
 
-        TableColumn<ReplayGame, String> variantColumn = new TableColumn<>("Variant");
+        TableColumn<ReplayGame, String> variantColumn = new TableColumn<>(AppText.text("Variant"));
         variantColumn.setCellValueFactory(game -> new ReadOnlyStringWrapper(
                 game.getValue().variant()));
 
-        TableColumn<ReplayGame, String> outcomeColumn = new TableColumn<>("Result");
+        TableColumn<ReplayGame, String> outcomeColumn = new TableColumn<>(AppText.text("Result"));
         outcomeColumn.setCellValueFactory(game -> new ReadOnlyStringWrapper(
                 game.getValue().outcome()));
 
@@ -179,13 +180,13 @@ public class ReplayController {
 
         if (currentUser == null || currentUser.getId() == null) {
             statusLabel.setText(
-                    "Your game history could not be loaded.");
+                    AppText.text("Your game history could not be loaded."));
             return;
         }
 
         historyTable.getItems().clear();
         historyTable.setDisable(true);
-        statusLabel.setText("Loading your completed games...");
+        statusLabel.setText(AppText.text("Loading your completed games..."));
 
         // Runs the API request away from the JavaFX screen.
         CompletableFuture
@@ -207,8 +208,8 @@ public class ReplayController {
                                 ? response.substring(0, 180) + "..."
                                 : response;
                         statusLabel.setText(
-                                "Invalid server response (expected an array): "
-                                        + preview);
+                                AppText.text("Invalid server response (expected an array): {0}",
+                                        preview));
                         return;
                     }
 
@@ -217,10 +218,10 @@ public class ReplayController {
 
                     if (historyTable.getItems().isEmpty()) {
                         statusLabel.setText(
-                                "You do not have any completed games yet.");
+                                AppText.text("You do not have any completed games yet."));
                     } else {
                         statusLabel.setText(
-                                "Select a game from the table.");
+                                AppText.text("Select a game from the table."));
                     }
                 }))
                 .exceptionally(exception -> {
@@ -238,9 +239,9 @@ public class ReplayController {
 
                     Platform.runLater(() -> {
                         historyTable.setDisable(false);
-                        statusLabel.setText(
-                                "Could not load your game history: "
-                                        + reportedFailure);
+                        statusLabel.setText(AppText.text(
+                                "Could not load your game history: {0}",
+                                reportedFailure));
                     });
 
                     return null;
@@ -268,12 +269,15 @@ public class ReplayController {
 
             String opponent = game.path("opponent")
                     .asText("Unknown");
+            opponent = translateGameField(opponent);
 
             String variant = game.path("variant")
                     .asText("Unknown");
+            variant = AppText.text(variant);
 
             String outcome = game.path("outcome")
                     .asText("Unknown");
+            outcome = AppText.text(outcome);
 
             historyTable.getItems().add(
                     new ReplayGame(
@@ -289,7 +293,7 @@ public class ReplayController {
     private String formatDate(String startedAt) {
 
         if (startedAt == null || startedAt.isBlank()) {
-            return "Unknown";
+            return AppText.text("Unknown");
         }
 
         String readableDate = startedAt.replace("T", " ");
@@ -299,6 +303,14 @@ public class ReplayController {
         }
 
         return readableDate;
+    }
+
+    private String translateGameField(String value) {
+        return switch (value) {
+            case "AI" -> AppText.text("AI");
+            case "HUMAN" -> AppText.text("Human");
+            default -> AppText.text(value);
+        };
     }
 
     // Stores the information displayed in one table row.
