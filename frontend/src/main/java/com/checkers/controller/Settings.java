@@ -2,6 +2,8 @@
 package com.checkers.controller;
 
 import com.checkers.Main;
+import com.checkers.localization.AppLanguage;
+import com.checkers.localization.AppText;
 
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
@@ -22,10 +24,11 @@ public class Settings {
     private static String selectedScreenSize = "Medium";
 
     // creates the settings screen
-    public Scene createScene(Runnable onResume, Runnable onLeave) {
+    public Scene createScene(Runnable onResume, Runnable onLeave,
+                            Runnable onLanguageChanged) {
 
         // screen title
-        Label title = new Label("Settings");
+        Label title = new Label(AppText.text("Settings"));
         title.setStyle(
                 "-fx-font-size: 30px;" +
                 "-fx-font-weight: bold;" +
@@ -33,64 +36,72 @@ public class Settings {
         );
 
         // resume button
-        Button resumeButton = new Button("Resume Game");
+        Button resumeButton = new Button(AppText.text("Resume Game"));
         AppTheme.stylePrimaryButton(resumeButton);
         resumeButton.setMaxWidth(220);
         resumeButton.setOnAction(event -> onResume.run());
 
         // screen size selection
-        Label screenSizeLabel = new Label("Screen Size");
+        Label screenSizeLabel = new Label(AppText.text("Screen Size"));
         screenSizeLabel.setStyle("-fx-font-size: 17px;");
 
         ComboBox<String> screenSize = new ComboBox<>();
         screenSize.getItems().addAll(
-                "Small",
-                "Medium",
-                "Large",
-                "Full Screen"
+                AppText.text("Small"),
+                AppText.text("Medium"),
+                AppText.text("Large"),
+                AppText.text("Full Screen")
         );
 
-        screenSize.setValue(selectedScreenSize);
+        screenSize.setValue(AppText.text(selectedScreenSize));
         screenSize.setMaxWidth(220);
 
         screenSize.setOnAction(event -> {
-            selectedScreenSize = screenSize.getValue();
+            String selected = screenSize.getValue();
+            if (AppText.text("Small").equals(selected)) {
+                selectedScreenSize = "Small";
+            } else if (AppText.text("Medium").equals(selected)) {
+                selectedScreenSize = "Medium";
+            } else if (AppText.text("Large").equals(selected)) {
+                selectedScreenSize = "Large";
+            } else if (AppText.text("Full Screen").equals(selected)) {
+                selectedScreenSize = "Full Screen";
+            } else {
+                selectedScreenSize = selected;
+            }
             Main.setWindowSize(selectedScreenSize);
         });
 
         // language selection
-        Label languageLabel = new Label("Language");
+        Label languageLabel = new Label(AppText.text("Language"));
         languageLabel.setStyle("-fx-font-size: 17px;");
 
-        ComboBox<String> language = new ComboBox<>();
-        language.getItems().add("English");
-        language.setValue("English");
+        ComboBox<AppLanguage> language = AppText.languagePicker(onLanguageChanged);
         language.setMaxWidth(220);
 
-        Label languageNote = new Label(
-                "Additional languages coming soon."
-        );
+        Label languageNote = new Label(AppText.text(
+                "Changing language will update the app interface."));
         languageNote.setStyle(
                 "-fx-font-size: 12px;" +
                 "-fx-text-fill: " + AppTheme.MUTED + ";"
         );
 
         // temporary volume setting
-        Label volumeLabel = new Label("Volume");
+        Label volumeLabel = new Label(AppText.text("Volume"));
         volumeLabel.setStyle("-fx-font-size: 17px;");
 
         Slider volumeSlider = new Slider(0, 100, 50);
         volumeSlider.setMaxWidth(220);
         volumeSlider.setDisable(true);
 
-        Label volumeNote = new Label("Sound settings coming soon.");
+        Label volumeNote = new Label(AppText.text("Sound settings coming soon."));
         volumeNote.setStyle(
                 "-fx-font-size: 12px;" +
                 "-fx-text-fill: " + AppTheme.MUTED + ";"
         );
 
         // leave game button
-        Button leaveButton = new Button("Leave Game");
+        Button leaveButton = new Button(AppText.text("Leave Game"));
         AppTheme.styleSecondaryButton(leaveButton);
         leaveButton.setMaxWidth(220);
 
@@ -107,11 +118,10 @@ public class Settings {
                     Alert.AlertType.CONFIRMATION
             );
 
-            confirmation.setTitle("Leave Game");
-            confirmation.setHeaderText("Are you sure you want to leave?");
-            confirmation.setContentText(
-                    "You will return to the main menu."
-            );
+            confirmation.setTitle(AppText.text("Leave Game"));
+            confirmation.setHeaderText(AppText.text("Are you sure you want to leave?"));
+            confirmation.setContentText(AppText.text(
+                    "You will return to the main menu."));
 
             Optional<ButtonType> result =
                     confirmation.showAndWait();

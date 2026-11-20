@@ -22,15 +22,15 @@ class GameLogicTest {
 
         // Red must remain the current player after the first jump.
         assertTrue(game.move(start, firstLanding));
-        assertEquals(GameLogic.red_player, game.getCurrentPlayer());
+        assertEquals(GameLogic.RED_PLAYER, game.getCurrentPlayer());
         assertEquals(firstLanding, game.getForcedJumpIndex());
         assertTrue(game.isMultiJumpInProgress());
 
         // The turn changes after the second jump finishes the sequence.
         assertTrue(game.move(firstLanding, secondLanding));
-        assertEquals(GameLogic.black_player, game.getCurrentPlayer());
+        assertEquals(GameLogic.BLACK_PLAYER, game.getCurrentPlayer());
         assertFalse(game.isMultiJumpInProgress());
-        assertEquals(0, game.countPieces(GameLogic.black_player));
+        assertEquals(0, game.countPieces(GameLogic.BLACK_PLAYER));
         assertEquals(GameLogic.GameState.RED_WON, game.getGameState());
     }
 
@@ -62,8 +62,8 @@ class GameLogicTest {
 
         // Black still has a piece, but it is trapped and cannot move.
         assertTrue(game.move(square(5, 0), square(4, 1)));
-        assertEquals(1, game.countPieces(GameLogic.black_player));
-        assertFalse(game.hasAnyLegalMove(GameLogic.black_player));
+        assertEquals(1, game.countPieces(GameLogic.BLACK_PLAYER));
+        assertFalse(game.hasAnyLegalMove(GameLogic.BLACK_PLAYER));
         assertEquals(GameLogic.GameState.RED_WON, game.getGameState());
     }
 
@@ -123,7 +123,7 @@ class GameLogicTest {
         assertTrue(game.move(start, end));
         assertSame(red, board.getPiece(end));
         assertTrue(board.isEmpty(start));
-        assertEquals(GameLogic.black_player, game.getCurrentPlayer());
+        assertEquals(GameLogic.BLACK_PLAYER, game.getCurrentPlayer());
     }
 
     //13.2 Basic Move Unsuccessful

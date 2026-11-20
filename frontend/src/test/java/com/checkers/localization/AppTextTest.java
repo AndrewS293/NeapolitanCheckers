@@ -21,6 +21,12 @@ class AppTextTest {
             AppText.setLanguage(AppLanguage.THAI);
             assertEquals("ภาษา", AppText.text("Language"));
 
+            AppText.setLanguage(AppLanguage.SENEGALESE);
+            assertEquals("Làkk", AppText.text("Language"));
+
+            AppText.setLanguage(AppLanguage.CANTONESE);
+            assertEquals("語言", AppText.text("Language"));
+
             AppText.setLanguage(AppLanguage.ENGLISH);
             assertEquals("Unmapped text", AppText.text("Unmapped text"));
         } finally {

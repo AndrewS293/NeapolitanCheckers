@@ -81,8 +81,6 @@ public class MainMenuController {
                 root.getChildren().addAll(
                                 title,
                                 welcome,
-                                new Label(AppText.text("Language")),
-                                AppText.languagePicker(Main::showMainMenu),
                                 playButton,
                                 playOnlineButton,
                                 replayButton,

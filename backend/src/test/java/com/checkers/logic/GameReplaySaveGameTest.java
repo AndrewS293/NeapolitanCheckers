@@ -42,7 +42,7 @@ class GameReplaySavedGameTest {
         assertFalse(beforePromotion.getBoard().getPiece(19).isKing());
         assertTrue(beforePromotion.getBoard().getPiece(12).isBlack());
 
-        assertEquals(GameLogic.red_player,
+        assertEquals(GameLogic.RED_PLAYER,
                 beforePromotion.getCurrentPlayer());
         assertEquals(19, beforePromotion.getForcedJumpIndex());
 
@@ -55,7 +55,7 @@ class GameReplaySavedGameTest {
         assertTrue(promoted.getBoard().getPiece(19).isEmpty());
         assertTrue(promoted.getBoard().getPiece(12).isEmpty());
 
-        assertEquals(GameLogic.black_player,
+        assertEquals(GameLogic.BLACK_PLAYER,
                 promoted.getCurrentPlayer());
         assertEquals(-1, promoted.getForcedJumpIndex());
 
@@ -68,7 +68,7 @@ class GameReplaySavedGameTest {
         assertTrue(restored.getBoard().getPiece(12).isBlack());
         assertTrue(restored.getBoard().getPiece(5).isEmpty());
 
-        assertEquals(GameLogic.red_player,
+        assertEquals(GameLogic.RED_PLAYER,
                 restored.getCurrentPlayer());
         assertEquals(19, restored.getForcedJumpIndex());
     }
@@ -93,7 +93,7 @@ class GameReplaySavedGameTest {
         assertTrue(firstJump.getBoard().getPiece(28).isEmpty());
 
         // Black must continue with the same piece.
-        assertEquals(GameLogic.black_player,
+        assertEquals(GameLogic.BLACK_PLAYER,
                 firstJump.getCurrentPlayer());
         assertEquals(37, firstJump.getForcedJumpIndex());
 
@@ -105,7 +105,7 @@ class GameReplaySavedGameTest {
         assertTrue(secondJump.getBoard().getPiece(37).isEmpty());
         assertTrue(secondJump.getBoard().getPiece(46).isEmpty());
 
-        assertEquals(GameLogic.red_player,
+        assertEquals(GameLogic.RED_PLAYER,
                 secondJump.getCurrentPlayer());
         assertEquals(-1, secondJump.getForcedJumpIndex());
 
@@ -116,7 +116,7 @@ class GameReplaySavedGameTest {
         assertTrue(undoSecond.getBoard().getPiece(46).isRed());
         assertTrue(undoSecond.getBoard().getPiece(55).isEmpty());
 
-        assertEquals(GameLogic.black_player,
+        assertEquals(GameLogic.BLACK_PLAYER,
                 undoSecond.getCurrentPlayer());
         assertEquals(37, undoSecond.getForcedJumpIndex());
 
@@ -129,7 +129,7 @@ class GameReplaySavedGameTest {
         assertTrue(undoFirst.getBoard().getPiece(46).isRed());
         assertTrue(undoFirst.getBoard().getPiece(37).isEmpty());
 
-        assertEquals(GameLogic.black_player,
+        assertEquals(GameLogic.BLACK_PLAYER,
                 undoFirst.getCurrentPlayer());
         assertEquals(-1, undoFirst.getForcedJumpIndex());
     }

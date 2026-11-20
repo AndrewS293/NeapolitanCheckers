@@ -7,7 +7,9 @@ public enum AppLanguage {
     ENGLISH("en", "English"),
     SPANISH("es", "Español"),
     ARABIC("ar", "العربية"),
-    THAI("th", "ไทย");
+    THAI("th", "ไทย"),
+    SENEGALESE("wo", "Senegalese"),
+    CANTONESE("yue", "Cantonese");
 
     private final String code;
     private final String displayName;
@@ -39,6 +41,8 @@ public enum AppLanguage {
                 ENGLISH.displayName, ENGLISH,
                 SPANISH.displayName, SPANISH,
                 ARABIC.displayName, ARABIC,
-                THAI.displayName, THAI);
+                THAI.displayName, THAI,
+                SENEGALESE.displayName, SENEGALESE,
+                CANTONESE.displayName, CANTONESE);
     }
 }

@@ -180,7 +180,7 @@ public class GameBoardController {
         rulesButton.setOnAction(event -> showRulesTutorial());
 
         // opens the settings screen
-        Button settingsButton = new Button("Settings");
+        Button settingsButton = new Button(AppText.text("Settings"));
         AppTheme.styleSecondaryButton(settingsButton);
 
         settingsButton.setOnAction(event ->

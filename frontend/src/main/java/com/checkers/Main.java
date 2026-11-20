@@ -16,6 +16,7 @@ import com.checkers.variants.GameFactory;
 import com.checkers.variants.VariantRegistry;
 import com.checkers.controller.ReplayController;
 import com.checkers.controller.Settings;
+import com.checkers.localization.AppText;
 
 import javafx.application.Application;
 import javafx.scene.Scene;
@@ -178,11 +179,12 @@ public class Main extends Application {
 
         Scene scene = settings.createScene(
                 () -> showGameBoard(controller),
-                () -> showMainMenu()
+                () -> showMainMenu(),
+                () -> showSettings(controller)
         );
 
         stage.setScene(scene);
-        stage.setTitle("Neapolitan Checkers - Settings");
+        stage.setTitle(AppText.text("Neapolitan Checkers - Settings"));
     }
 
     // returns to existing game without resetting its logic

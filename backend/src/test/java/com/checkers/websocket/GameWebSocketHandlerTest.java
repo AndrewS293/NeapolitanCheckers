@@ -120,7 +120,7 @@ class GameWebSocketHandlerTest {
         assertEquals(GameRoom.Status.ACTIVE, room.getStatus());
         assertTrue(room.isPlayerConnected(1));
         assertTrue(room.isPlayerConnected(2));
-        assertEquals(GameLogic.red_player, room.getGameLogic().getCurrentPlayer());
+        assertEquals(GameLogic.RED_PLAYER, room.getGameLogic().getCurrentPlayer());
         assertEquals(1L, findMessage(playerOne, "GAME_STARTED")
                 .path("databaseGameId").asLong());
         assertNotNull(findMessage(playerTwo, "GAME_STARTED"));
@@ -135,7 +135,7 @@ class GameWebSocketHandlerTest {
 
         handler.handleTextMessage(playerTwo, moveMessage(2, 1, 3, 0));
 
-        assertEquals(GameLogic.red_player, room.getGameLogic().getCurrentPlayer());
+        assertEquals(GameLogic.RED_PLAYER, room.getGameLogic().getCurrentPlayer());
         assertEquals(PieceType.BLACK, pieceType(room, 2, 1));
         assertNotNull(findMessage(playerTwo, "ERROR"));
         assertFalse(hasMessage(playerTwo, "MOVE"));
@@ -156,7 +156,7 @@ class GameWebSocketHandlerTest {
             .thenReturn(true);
         handler.handleTextMessage(playerOne, moveMessage(5, 0, 4, 1));
 
-        assertEquals(GameLogic.black_player, room.getGameLogic().getCurrentPlayer());
+        assertEquals(GameLogic.BLACK_PLAYER, room.getGameLogic().getCurrentPlayer());
         assertEquals(PieceType.RED, pieceType(room, 4, 1));
         assertNotNull(findMessage(playerOne, "MOVE"));
     }
