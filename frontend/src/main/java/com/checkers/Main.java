@@ -15,6 +15,7 @@ import com.checkers.logic.GameLogic;
 import com.checkers.variants.GameFactory;
 import com.checkers.variants.VariantRegistry;
 import com.checkers.controller.ReplayController;
+import com.checkers.controller.Settings;
 
 import javafx.application.Application;
 import javafx.scene.Scene;
@@ -168,4 +169,60 @@ public class Main extends Application {
     public static void main(String[] args) {
         launch(args);
     }
+
+
+    // opens settings screen for the current game
+    public static void showSettings(GameBoardController controller) {
+
+        Settings settings = new Settings();
+
+        Scene scene = settings.createScene(
+                () -> showGameBoard(controller),
+                () -> showMainMenu()
+        );
+
+        stage.setScene(scene);
+        stage.setTitle("Neapolitan Checkers - Settings");
+    }
+
+    // returns to existing game without resetting its logic
+    public static void showGameBoard(GameBoardController controller) {
+
+        stage.setScene(controller.createScene());
+        stage.setTitle("Neapolitan Checkers");
+    }
+
+    // changes application window size
+    public static void setWindowSize(String size) {
+
+        stage.setFullScreen(false);
+        stage.setResizable(true);
+
+        switch (size) {
+            case "Small" -> {
+                stage.setWidth(540);
+                stage.setHeight(700);
+            }
+
+            case "Medium" -> {
+                stage.setWidth(700);
+                stage.setHeight(900);
+            }
+
+            case "Large" -> {
+                stage.setWidth(1000);
+                stage.setHeight(900);
+            }
+
+            case "Full Screen" -> {
+                stage.setFullScreen(true);
+            }
+
+            default -> {
+                stage.setWidth(700);
+                stage.setHeight(900);
+            }
+        }
+    }
+
 }

@@ -159,11 +159,18 @@ public class GameBoardController {
         AppTheme.styleSecondaryButton(rulesButton);
         rulesButton.setOnAction(event -> showRulesTutorial());
 
+        // opens the settings screen
+        Button settingsButton = new Button("Settings");
+        AppTheme.styleSecondaryButton(settingsButton);
+
+        settingsButton.setOnAction(event ->
+        Main.showSettings(this));
+
         newGameButton.setOnAction(event -> startNewGame());
 
         backButton.setOnAction(event -> Main.showMainMenu());
 
-        HBox buttons = new HBox(15, rulesButton, newGameButton, backButton);
+        HBox buttons = new HBox(15, rulesButton, settingsButton, newGameButton, backButton);
         buttons.setAlignment(Pos.CENTER);
 
         VBox topSection = new VBox(10, title, gameStatus);
