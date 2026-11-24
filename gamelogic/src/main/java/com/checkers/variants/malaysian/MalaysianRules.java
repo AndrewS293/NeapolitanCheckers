@@ -18,10 +18,20 @@ public final class MalaysianRules implements GameRules {
             {-1, -1}, {-1, 1}, {1, -1}, {1, 1}
     };
 
-    private final GameConfig config = new GameConfig(
-            "MALAYSIAN", 12, 5, 30,
-            GameConfig.SquareLayout.DARK_SQUARES_ONLY, true);
+    private final GameConfig config;
 
+    public MalaysianRules() {
+        this(new GameConfig("MALAYSIAN", 12, 5, 30,
+                GameConfig.SquareLayout.DARK_SQUARES_ONLY, true));
+    }
+
+    public MalaysianRules(GameConfig config) {
+        if (config == null || !"MALAYSIAN".equals(config.getVariantId())) {
+            throw new IllegalArgumentException("Wrong GameConfig");
+        }
+        this.config = config;
+    }
+    
     @Override public String getVariantId() { 
         return "MALAYSIAN"; 
     }

@@ -36,13 +36,19 @@ public final class SenegaleseRules implements GameRules {
      * - 20 pieces per player
      * - Only dark squares are playable
      */
-    private final GameConfig config = new GameConfig(
-            "SENEGALESE",
-            10,
-            4,
-            20,
-            GameConfig.SquareLayout.DARK_SQUARES_ONLY,
-            true);
+    private final GameConfig config;
+
+    public SenegaleseRules() {
+      this(new GameConfig("SENEGALESE", 10, 4, 20,
+                GameConfig.SquareLayout.DARK_SQUARES_ONLY, true));
+    }
+
+    public SenegaleseRules(GameConfig config) {
+        if (config == null || !"SENEGALESE".equals(config.getVariantId())) {
+            throw new IllegalArgumentException("Wrong GameConfig");
+        }
+        this.config = config;
+    }
 
     // Unique name used by the game engine.
     @Override
